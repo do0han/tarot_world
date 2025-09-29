@@ -1,6 +1,8 @@
 // lib/screens/onboarding_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/app_config.dart';
+import '../providers/app_provider.dart';
 import 'main_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -22,14 +24,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  // 온보딩 완료 상태를 메모리에 저장 (간단한 구현)
-  static bool _onboardingCompleted = false;
-
-  static bool get isOnboardingCompleted => _onboardingCompleted;
-
-  static void markOnboardingCompleted() {
-    _onboardingCompleted = true;
-  }
+  // AppProvider 상태를 사용
 
   void _onPageChanged(int page) {
     setState(() {
@@ -58,7 +53,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _completeOnboarding() {
-    markOnboardingCompleted();
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    appProvider.markOnboardingCompleted();
 
     if (mounted) {
       Navigator.of(context).pushReplacement(

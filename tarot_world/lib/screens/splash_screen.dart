@@ -25,7 +25,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _initializeApp() async {
     final appProvider = Provider.of<AppProvider>(context, listen: false);
-    
+
     try {
       await appProvider.initialize();
       _navigateToNextScreen();
@@ -40,28 +40,38 @@ class _SplashScreenState extends State<SplashScreen> {
     _isNavigating = true;
 
     final appProvider = Provider.of<AppProvider>(context, listen: false);
-    
+
     // 최소 2초 스플래시 표시
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
 
       if (appProvider.isInitialized) {
-        final onboardingPages = appProvider.appConfig?.onboardingData;
-        
-        if (onboardingPages != null && onboardingPages.isNotEmpty) {
-          // 서버에서 받은 온보딩 페이지로 이동
+        // 온보딩 완료 여부 확인
+        if (appProvider.onboardingCompleted) {
+          // 온보딩이 완료된 경우 바로 메인 화면으로
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => OnboardingScreen(pages: onboardingPages),
-            ),
+            MaterialPageRoute(builder: (context) => const MainScreen()),
           );
         } else {
-          // 온보딩 페이지가 없으면 바로 메인으로 (더미 데이터 사용)
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => OnboardingScreen(pages: _getDummyOnboardingPages()),
-            ),
-          );
+          // 온보딩이 필요한 경우
+          final onboardingPages = appProvider.appConfig?.onboardingData;
+
+          if (onboardingPages != null && onboardingPages.isNotEmpty) {
+            // 서버에서 받은 온보딩 페이지로 이동
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => OnboardingScreen(pages: onboardingPages),
+              ),
+            );
+          } else {
+            // 온보딩 페이지가 없으면 더미 데이터 사용
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) =>
+                    OnboardingScreen(pages: _getDummyOnboardingPages()),
+              ),
+            );
+          }
         }
       }
     });
@@ -106,7 +116,8 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
         ),
         child: Consumer<AppProvider>(
-          builder: (BuildContext context, AppProvider appProvider, Widget? child) {
+          builder:
+              (BuildContext context, AppProvider appProvider, Widget? child) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -126,7 +137,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // 상태별 UI 표시
                   if (appProvider.hasError) ...[
                     Padding(

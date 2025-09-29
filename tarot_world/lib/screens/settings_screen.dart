@@ -1,5 +1,10 @@
 // lib/screens/settings_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
+import '../models/app_config.dart';
+import '../widgets/loading_widget.dart';
+import '../widgets/error_widget.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -9,34 +14,17 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // 카드 스타일 설정 (메모리 저장)
-  static String _selectedCardStyle = 'vintage';
-
-  static String get selectedCardStyle => _selectedCardStyle;
-
-  static void setCardStyle(String style) {
-    _selectedCardStyle = style;
-  }
-
-  final List<Map<String, dynamic>> _cardStyles = [
-    {
-      'id': 'vintage',
-      'name': '빈티지',
-      'description': '클래식하고 우아한 스타일',
-      'icon': Icons.auto_awesome,
-    },
-    {
-      'id': 'cartoon',
-      'name': '카툰',
-      'description': '귀엽고 친근한 스타일',
-      'icon': Icons.palette,
-    },
-  ];
+  // 스타일 아이콘 매핑
+  final Map<String, IconData> _styleIcons = {
+    'vintage': Icons.auto_awesome,
+    'cartoon': Icons.palette,
+    'modern': Icons.design_services,
+    'default': Icons.style,
+  };
 
   void _selectCardStyle(String styleId) {
-    setState(() {
-      setCardStyle(styleId);
-    });
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    appProvider.setCardStyle(styleId);
 
     // 스낵바로 변경 완료 알림
     ScaffoldMessenger.of(context).showSnackBar(
@@ -49,8 +37,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   String _getStyleName(String styleId) {
-    final style = _cardStyles.firstWhere((s) => s['id'] == styleId);
-    return style['name'];
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    final style = appProvider.availableStyles.firstWhere(
+      (s) => s.id == styleId,
+      orElse: () => CardStyle(id: styleId, name: styleId, description: ''),
+    );
+    return style.name;
+  }
+
+  IconData _getStyleIcon(String styleId) {
+    return _styleIcons[styleId] ?? _styleIcons['default']!;
   }
 
   @override
@@ -66,159 +62,189 @@ class _SettingsScreenState extends State<SettingsScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 카드 스타일 선택 섹션
-              const Text(
-                '카드 스타일',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+      body: Consumer<AppProvider>(
+        builder: (context, appProvider, child) {
+          if (appProvider.isLoading) {
+            return const LoadingWidget(
+              message: '스타일 데이터를 불러오는 중...',
+            );
+          }
+
+          if (appProvider.hasError) {
+            return ErrorDisplayWidget(
+              message: '스타일 정보를 불러올 수 없습니다',
+              details: appProvider.errorMessage,
+              onRetry: () => appProvider.refresh(),
+            );
+          }
+
+          final availableStyles = appProvider.availableStyles;
+          final selectedStyle = appProvider.selectedCardStyle;
+
+          if (availableStyles.isEmpty) {
+            return const Center(
+              child: Text(
+                '사용 가능한 카드 스타일이 없습니다',
+                style: TextStyle(color: Colors.white70, fontSize: 16),
               ),
+            );
+          }
 
-              const SizedBox(height: 8),
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 카드 스타일 선택 섹션
+                  const Text(
+                    '카드 스타일',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
 
-              const Text(
-                '원하는 타로 카드 디자인을 선택하세요',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
-              ),
+                  const SizedBox(height: 8),
 
-              const SizedBox(height: 24),
+                  Text(
+                    '${availableStyles.length}가지 타로 카드 디자인 중 선택하세요',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                    ),
+                  ),
 
-              // 스타일 옵션들
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _cardStyles.length,
-                  itemBuilder: (context, index) {
-                    final style = _cardStyles[index];
-                    final isSelected = _selectedCardStyle == style['id'];
+                  const SizedBox(height: 24),
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => _selectCardStyle(style['id']),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color(0xFF9966CC).withOpacity(0.3)
-                                  : Colors.white.withOpacity(0.1),
+                  // 스타일 옵션들
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: availableStyles.length,
+                      itemBuilder: (context, index) {
+                        final style = availableStyles[index];
+                        final isSelected = selectedStyle == style.id;
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _selectCardStyle(style.id),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isSelected
-                                    ? const Color(0xFF9966CC)
-                                    : Colors.white.withOpacity(0.2),
-                                width: 2,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                // 아이콘
-                                Container(
-                                  width: 60,
-                                  height: 60,
-                                  decoration: BoxDecoration(
+                              child: Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFF9966CC).withOpacity(0.3)
+                                      : Colors.white.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
                                     color: isSelected
                                         ? const Color(0xFF9966CC)
                                         : Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    style['icon'],
-                                    color: Colors.white,
-                                    size: 30,
+                                    width: 2,
                                   ),
                                 ),
-
-                                const SizedBox(width: 16),
-
-                                // 텍스트 정보
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        style['name'],
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 20,
-                                          fontWeight: isSelected
-                                              ? FontWeight.bold
-                                              : FontWeight.w500,
-                                        ),
+                                child: Row(
+                                  children: [
+                                    // 아이콘
+                                    Container(
+                                      width: 60,
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? const Color(0xFF9966CC)
+                                            : Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        style['description'],
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 14,
-                                        ),
+                                      child: Icon(
+                                        _getStyleIcon(style.id),
+                                        color: Colors.white,
+                                        size: 30,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+
+                                    const SizedBox(width: 16),
+
+                                    // 텍스트 정보
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            style.name,
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 20,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.w500,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            style.description,
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    // 선택 표시
+                                    if (isSelected)
+                                      const Icon(
+                                        Icons.check_circle,
+                                        color: Color(0xFF9966CC),
+                                        size: 24,
+                                      ),
+                                  ],
                                 ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
 
-                                // 선택 표시
-                                if (isSelected)
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: Color(0xFF9966CC),
-                                    size: 24,
-                                  ),
-                              ],
+                  // 하단 정보
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          color: Colors.white70,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            '선택한 스타일은 모든 타로 리딩에서 적용됩니다.\n현재 선택: ${_getStyleName(selectedStyle)}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              // 하단 정보
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: Colors.white70,
-                      size: 20,
+                      ],
                     ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        '선택한 스타일은 모든 타로 리딩에서 적용됩니다.',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

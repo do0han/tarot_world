@@ -37,11 +37,16 @@ class AppProvider with ChangeNotifier {
   String _selectedCardStyle = 'vintage';
   String get selectedCardStyle => _selectedCardStyle;
 
+  // 온보딩 완료 상태 (앱 재시작 시 리셋됨 - 간단한 구현)
+  bool _onboardingCompleted = false;
+  bool get onboardingCompleted => _onboardingCompleted;
+
   // 캐시 관리
   DateTime? _lastFetchTime;
   static const Duration _cacheTimeout = Duration(minutes: 30);
 
-  bool get isCacheValid => _lastFetchTime != null && 
+  bool get isCacheValid =>
+      _lastFetchTime != null &&
       DateTime.now().difference(_lastFetchTime!) < _cacheTimeout;
 
   // API 서비스 인스턴스
@@ -66,7 +71,7 @@ class AppProvider with ChangeNotifier {
 
       _appConfig = await _apiService.getAppConfig();
       _lastFetchTime = DateTime.now();
-      
+
       _setLoadingState(LoadingState.success);
       print('앱 설정 로드 완료: ${_appConfig?.name}');
     } catch (e) {
@@ -80,14 +85,14 @@ class AppProvider with ChangeNotifier {
       if (_loadingState != LoadingState.loading) {
         _setLoadingState(LoadingState.loading);
       }
-      
+
       _tarotCards = await _apiService.getTarotCards();
       _availableStyles = await _apiService.getAvailableStyles();
-      
+
       if (_loadingState == LoadingState.loading) {
         _setLoadingState(LoadingState.success);
       }
-      
+
       print('타로 카드 로드 완료: ${_tarotCards.length}장');
       print('사용 가능한 스타일: ${_availableStyles.length}개');
     } catch (e) {
@@ -113,6 +118,15 @@ class AppProvider with ChangeNotifier {
       _selectedCardStyle = styleId;
       notifyListeners();
       print('카드 스타일 변경: $styleId');
+    }
+  }
+
+  // 온보딩 완료 설정
+  void markOnboardingCompleted() {
+    if (!_onboardingCompleted) {
+      _onboardingCompleted = true;
+      notifyListeners();
+      print('온보딩 완료 표시');
     }
   }
 
@@ -142,12 +156,12 @@ class AppProvider with ChangeNotifier {
   // 에러 처리
   void _handleError(String message, dynamic error) {
     print('Error: $message - $error');
-    
+
     String errorMsg = message;
     if (error is NetworkException) {
       errorMsg = error.message;
     }
-    
+
     _errorMessage = errorMsg;
     _setLoadingState(LoadingState.error);
   }
