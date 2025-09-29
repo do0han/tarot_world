@@ -1,5 +1,34 @@
 // lib/models/app_config.dart
 
+// 카드 스타일 정보
+class CardStyle {
+  final String id;
+  final String name;
+  final String description;
+
+  CardStyle({
+    required this.id,
+    required this.name,
+    required this.description,
+  });
+
+  factory CardStyle.fromJson(Map<String, dynamic> json) {
+    return CardStyle(
+      id: json['id'],
+      name: json['name'],
+      description: json['description'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+    };
+  }
+}
+
 // 메인 설계도 (Tarot Constellation용 확장)
 class AppConfig {
   final String name;

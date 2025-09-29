@@ -11,36 +11,32 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _isNavigating = false;
+
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _initializeApp();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _initializeApp() async {
     // 2초 로딩 시뮬레이션
     await Future.delayed(const Duration(seconds: 2));
 
     if (mounted) {
-      // 온보딩 필요 여부 확인 (임시 구현)
-      const needsOnboarding = true; // 첫 실행시 항상 온보딩 표시
-
-      if (needsOnboarding) {
-        // 온보딩 화면으로 이동 (임시 데이터)
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => OnboardingScreen(
-              pages: _getDummyOnboardingPages(),
-            ),
+      // 온보딩 화면으로 이동 (임시 데이터)
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => OnboardingScreen(
+            pages: _getDummyOnboardingPages(),
           ),
-        );
-      } else {
-        // 메인 화면으로 이동
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
-      }
+        ),
+      );
     }
+  }
+
+  void _navigateToNextScreen() {
+    // 사용하지 않음 - _initializeApp에서 직접 처리
   }
 
   List<OnboardingPage> _getDummyOnboardingPages() {
@@ -68,40 +64,52 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF2D1B69),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.auto_awesome,
-              size: 80,
-              color: Colors.white,
-            ),
-            SizedBox(height: 30),
-            Text(
-              'Tarot Constellation',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+    return Scaffold(
+      backgroundColor: const Color(0xFF2D1B69),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF2D1B69),
+              Color(0xFF1A0E42),
+            ],
+          ),
+        ),
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                size: 80,
                 color: Colors.white,
               ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              '로딩 중...',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.white70,
+              SizedBox(height: 30),
+              Text(
+                'Tarot Constellation',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-            ),
-            SizedBox(height: 30),
-            CircularProgressIndicator(
-              color: Colors.white,
-            ),
-          ],
+              SizedBox(height: 16),
+              Text(
+                '앱을 시작하는 중...',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                ),
+              ),
+              SizedBox(height: 30),
+              CircularProgressIndicator(
+                color: Colors.white,
+              ),
+            ],
+          ),
         ),
       ),
     );
