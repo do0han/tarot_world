@@ -8,12 +8,12 @@ class ErrorDisplayWidget extends StatelessWidget {
   final IconData icon;
 
   const ErrorDisplayWidget({
-    Key? key,
+    super.key,
     required this.message,
     this.details,
     this.onRetry,
     this.icon = Icons.error_outline,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -32,9 +32,9 @@ class ErrorDisplayWidget extends StatelessWidget {
             Text(
               message,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
               textAlign: TextAlign.center,
             ),
             if (details != null) ...[
@@ -42,8 +42,8 @@ class ErrorDisplayWidget extends StatelessWidget {
               Text(
                 details!,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white70,
-                ),
+                      color: Colors.white70,
+                    ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -75,10 +75,10 @@ class NetworkErrorWidget extends StatelessWidget {
   final String message;
 
   const NetworkErrorWidget({
-    Key? key,
+    super.key,
     this.onRetry,
     this.message = '인터넷 연결을 확인해주세요',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -96,10 +96,10 @@ class ServerErrorWidget extends StatelessWidget {
   final String message;
 
   const ServerErrorWidget({
-    Key? key,
+    super.key,
     this.onRetry,
     this.message = '서버에 연결할 수 없습니다',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +113,8 @@ class ServerErrorWidget extends StatelessWidget {
 }
 
 // 에러 스낵바 표시
-void showErrorSnackBar(BuildContext context, String message, {VoidCallback? onRetry}) {
+void showErrorSnackBar(BuildContext context, String message,
+    {VoidCallback? onRetry}) {
   ScaffoldMessenger.of(context).hideCurrentSnackBar();
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(

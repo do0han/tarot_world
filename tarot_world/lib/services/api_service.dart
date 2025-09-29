@@ -20,7 +20,8 @@ class ApiResponse<T> {
     required this.statusCode,
   });
 
-  factory ApiResponse.fromJson(Map<String, dynamic> json, T Function(dynamic) fromJsonT) {
+  factory ApiResponse.fromJson(
+      Map<String, dynamic> json, T Function(dynamic) fromJsonT) {
     return ApiResponse<T>(
       success: json['success'] ?? false,
       data: json['data'] != null ? fromJsonT(json['data']) : null,
@@ -53,7 +54,8 @@ class ApiService {
   static final http.Client _httpClient = http.Client();
 
   // 공통 HTTP 요청 처리
-  static Future<Map<String, dynamic>> _makeRequest(String endpoint, {Map<String, String>? queryParams}) async {
+  static Future<Map<String, dynamic>> _makeRequest(String endpoint,
+      {Map<String, String>? queryParams}) async {
     try {
       Uri uri = Uri.parse('$_baseUrl$endpoint');
       if (queryParams != null) {
@@ -94,8 +96,10 @@ class ApiService {
 
   // 앱 설정 및 메뉴 데이터 가져오기
   Future<AppConfig> getAppConfig([String? packageName]) async {
-    final Map<String, String>? queryParams = packageName != null ? {'packageName': packageName} : null;
-    final jsonData = await _makeRequest('/app-config', queryParams: queryParams);
+    final Map<String, String>? queryParams =
+        packageName != null ? {'packageName': packageName} : null;
+    final jsonData =
+        await _makeRequest('/app-config', queryParams: queryParams);
     return AppConfig.fromJson(jsonData['data']);
   }
 
@@ -112,7 +116,8 @@ class ApiService {
       'count': count.toString(),
       'style': style,
     };
-    final jsonData = await _makeRequest('/draw-cards', queryParams: queryParams);
+    final jsonData =
+        await _makeRequest('/draw-cards', queryParams: queryParams);
     return DrawCardsResponse.fromJson(jsonData['data']);
   }
 

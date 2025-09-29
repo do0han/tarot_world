@@ -6,10 +6,10 @@ class LoadingWidget extends StatelessWidget {
   final bool showSpinner;
 
   const LoadingWidget({
-    Key? key,
+    super.key,
     this.message = '로딩 중...',
     this.showSpinner = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +26,8 @@ class LoadingWidget extends StatelessWidget {
           Text(
             message,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.white70,
-            ),
+                  color: Colors.white70,
+                ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -42,11 +42,11 @@ class SkeletonLoader extends StatefulWidget {
   final BorderRadius? borderRadius;
 
   const SkeletonLoader({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.borderRadius,
-  }) : super(key: key);
+  });
 
   @override
   State<SkeletonLoader> createState() => _SkeletonLoaderState();
@@ -64,7 +64,7 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat();
-    
+
     _animation = Tween<double>(
       begin: -1.0,
       end: 2.0,
@@ -117,11 +117,11 @@ class GridSkeletonLoader extends StatelessWidget {
   final double itemHeight;
 
   const GridSkeletonLoader({
-    Key? key,
+    super.key,
     this.itemCount = 4,
     this.itemWidth = 150,
     this.itemHeight = 80,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

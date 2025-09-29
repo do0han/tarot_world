@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/app_config.dart';
+import '../providers/app_provider.dart';
+import '../widgets/loading_widget.dart';
+import '../widgets/error_widget.dart';
 import 'main_screen.dart';
 import 'onboarding_screen.dart';
 
@@ -20,23 +24,47 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _initializeApp() async {
-    // 2초 로딩 시뮬레이션
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
-      // 온보딩 화면으로 이동 (임시 데이터)
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => OnboardingScreen(
-            pages: _getDummyOnboardingPages(),
-          ),
-        ),
-      );
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    
+    try {
+      await appProvider.initialize();
+      _navigateToNextScreen();
+    } catch (e) {
+      // 에러는 AppProvider에서 처리되므로 여기서는 별도 처리 불필요
+      print('초기화 중 오류: $e');
     }
   }
 
   void _navigateToNextScreen() {
-    // 사용하지 않음 - _initializeApp에서 직접 처리
+    if (_isNavigating) return;
+    _isNavigating = true;
+
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    
+    // 최소 2초 스플래시 표시
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+
+      if (appProvider.isInitialized) {
+        final onboardingPages = appProvider.appConfig?.onboardingData;
+        
+        if (onboardingPages != null && onboardingPages.isNotEmpty) {
+          // 서버에서 받은 온보딩 페이지로 이동
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => OnboardingScreen(pages: onboardingPages),
+            ),
+          );
+        } else {
+          // 온보딩 페이지가 없으면 바로 메인으로 (더미 데이터 사용)
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => OnboardingScreen(pages: _getDummyOnboardingPages()),
+            ),
+          );
+        }
+      }
+    });
   }
 
   List<OnboardingPage> _getDummyOnboardingPages() {
@@ -77,39 +105,100 @@ class _SplashScreenState extends State<SplashScreen> {
             ],
           ),
         ),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.auto_awesome,
-                size: 80,
-                color: Colors.white,
+        child: Consumer<AppProvider>(
+          builder: (BuildContext context, AppProvider appProvider, Widget? child) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.auto_awesome,
+                    size: 80,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(height: 30),
+                  const Text(
+                    'Tarot Constellation',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // 상태별 UI 표시
+                  if (appProvider.hasError) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.orange,
+                            size: 48,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            appProvider.errorMessage ?? '오류가 발생했습니다',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.white70,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              appProvider.clearError();
+                              _initializeApp();
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('다시 시도'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.purple,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else if (appProvider.isLoading) ...[
+                    const LoadingWidget(
+                      message: '타로 카드 데이터를 불러오는 중...',
+                    ),
+                  ] else if (appProvider.isInitialized) ...[
+                    const Text(
+                      '데이터 로드 완료!',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.green,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '카드 ${appProvider.tarotCards.length}장 로드됨',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.white60,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Icon(
+                      Icons.check_circle_outline,
+                      color: Colors.green,
+                      size: 32,
+                    ),
+                  ] else ...[
+                    const LoadingWidget(
+                      message: '앱을 시작하는 중...',
+                    ),
+                  ],
+                ],
               ),
-              SizedBox(height: 30),
-              Text(
-                'Tarot Constellation',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: 16),
-              Text(
-                '앱을 시작하는 중...',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white70,
-                ),
-              ),
-              SizedBox(height: 30),
-              CircularProgressIndicator(
-                color: Colors.white,
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
