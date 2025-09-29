@@ -1,7 +1,9 @@
 // lib/screens/tarot_reading_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dart:math';
 import '../models/app_config.dart';
+import '../providers/app_provider.dart';
 import 'result_screen.dart';
 
 class TarotReadingScreen extends StatefulWidget {
@@ -24,49 +26,11 @@ class _TarotReadingScreenState extends State<TarotReadingScreen>
     with TickerProviderStateMixin {
   bool _isShuffling = false;
   bool _cardsReady = false;
+  bool _isDrawingCards = false;
   final List<int> _selectedCardIndices = [];
   late AnimationController _shuffleController;
   late AnimationController _cardFlipController;
-
-  // 더미 카드 데이터 (실제로는 서버에서 받아옴)
-  final List<TarotCard> _dummyCards = [
-    TarotCard(
-      id: 1,
-      nameKo: "바보",
-      nameEn: "The Fool",
-      keywords: "새로운 시작, 순수함, 모험",
-      descriptionUpright: "새로운 여행의 시작을 의미합니다. 순수한 마음으로 도전하세요.",
-      descriptionReversed: "경솔한 결정을 조심하세요. 더 신중하게 접근이 필요합니다.",
-      images: {
-        'vintage': 'https://example.com/vintage/fool.png',
-        'cartoon': 'https://example.com/cartoon/fool.png'
-      },
-    ),
-    TarotCard(
-      id: 2,
-      nameKo: "마법사",
-      nameEn: "The Magician",
-      keywords: "의지력, 창조력, 실행력",
-      descriptionUpright: "강한 의지력으로 목표를 달성할 수 있는 시기입니다.",
-      descriptionReversed: "능력을 잘못된 방향으로 사용하고 있을지 모릅니다.",
-      images: {
-        'vintage': 'https://example.com/vintage/magician.png',
-        'cartoon': 'https://example.com/cartoon/magician.png'
-      },
-    ),
-    TarotCard(
-      id: 3,
-      nameKo: "여사제",
-      nameEn: "The High Priestess",
-      keywords: "직감, 신비, 내면의 지혜",
-      descriptionUpright: "직감과 내면의 목소리에 귀를 기울이세요.",
-      descriptionReversed: "감정에 휩쓸려 올바른 판단을 못하고 있습니다.",
-      images: {
-        'vintage': 'https://example.com/vintage/high_priestess.png',
-        'cartoon': 'https://example.com/cartoon/high_priestess.png'
-      },
-    ),
-  ];
+  DrawCardsResponse? _drawnCardsResponse;
 
   @override
   void initState() {
@@ -104,24 +68,84 @@ class _TarotReadingScreenState extends State<TarotReadingScreen>
   }
 
   Future<void> _startShuffle() async {
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    
     setState(() {
       _isShuffling = true;
       _cardsReady = false;
+      _isDrawingCards = false;
       _selectedCardIndices.clear();
+      _drawnCardsResponse = null;
     });
 
     // 셔플 애니메이션 실행
     await _shuffleController.forward();
 
-    // 잠시 대기
-    await Future.delayed(const Duration(milliseconds: 500));
-
+    // 서버에서 실제 카드 뽑기
     setState(() {
-      _isShuffling = false;
-      _cardsReady = true;
+      _isDrawingCards = true;
     });
 
+    try {
+      _drawnCardsResponse = await appProvider.drawCards(
+        _cardCount, 
+        style: appProvider.selectedCardStyle,
+      );
+      
+      if (_drawnCardsResponse != null) {
+        // 잠시 대기 후 카드 선택 화면 표시
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        setState(() {
+          _isShuffling = false;
+          _isDrawingCards = false;
+          _cardsReady = true;
+        });
+      } else {
+        // 에러 처리
+        _showErrorDialog('카드를 뽑을 수 없습니다. 다시 시도해주세요.');
+        setState(() {
+          _isShuffling = false;
+          _isDrawingCards = false;
+        });
+      }
+    } catch (e) {
+      _showErrorDialog('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+      setState(() {
+        _isShuffling = false;
+        _isDrawingCards = false;
+      });
+    }
+
     _shuffleController.reset();
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2D1B69),
+          title: const Text(
+            '알림',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                '확인',
+                style: TextStyle(color: Color(0xFF9966CC)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _selectCard(int index) {
@@ -138,8 +162,10 @@ class _TarotReadingScreenState extends State<TarotReadingScreen>
   }
 
   void _goToResult() {
+    if (_drawnCardsResponse == null) return;
+    
     final selectedCards = _selectedCardIndices
-        .map((index) => _dummyCards[index % _dummyCards.length])
+        .map((index) => _drawnCardsResponse!.drawnCards[index % _drawnCardsResponse!.drawnCards.length])
         .toList();
 
     Navigator.of(context).push(
@@ -207,7 +233,7 @@ class _TarotReadingScreenState extends State<TarotReadingScreen>
               Expanded(
                 child: !_isShuffling && !_cardsReady
                     ? _buildShuffleButton()
-                    : _isShuffling
+                    : _isShuffling || _isDrawingCards
                         ? _buildShuffleAnimation()
                         : _buildCardSelection(),
               ),
@@ -289,54 +315,78 @@ class _TarotReadingScreenState extends State<TarotReadingScreen>
 
   Widget _buildShuffleAnimation() {
     return Center(
-      child: AnimatedBuilder(
-        animation: _shuffleController,
-        builder: (context, child) {
-          return Transform.rotate(
-            angle: _shuffleController.value * 4 * pi,
-            child: Transform.scale(
-              scale: 1.0 + _shuffleController.value * 0.2,
-              child: Container(
-                width: 150,
-                height: 220,
-                decoration: BoxDecoration(
-                  color: Color.lerp(
-                    const Color(0xFF9966CC),
-                    Colors.amber,
-                    _shuffleController.value,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 10 + _shuffleController.value * 20,
-                      offset: const Offset(0, 5),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedBuilder(
+            animation: _shuffleController,
+            builder: (context, child) {
+              return Transform.rotate(
+                angle: _shuffleController.value * 4 * pi,
+                child: Transform.scale(
+                  scale: 1.0 + _shuffleController.value * 0.2,
+                  child: Container(
+                    width: 150,
+                    height: 220,
+                    decoration: BoxDecoration(
+                      color: Color.lerp(
+                        const Color(0xFF9966CC),
+                        Colors.amber,
+                        _shuffleController.value,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 10 + _shuffleController.value * 20,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.auto_awesome,
-                    size: 50,
-                    color: Colors.white,
+                    child: const Center(
+                      child: Icon(
+                        Icons.auto_awesome,
+                        size: 50,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              );
+            },
+          ),
+          const SizedBox(height: 30),
+          Text(
+            _isDrawingCards ? '카드를 뽑고 있습니다...' : '카드를 섞고 있습니다...',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 16,
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildCardSelection() {
+    if (_drawnCardsResponse == null) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF9966CC),
+        ),
+      );
+    }
+
+    final availableCards = _drawnCardsResponse!.drawnCards.length;
+    final displayCount = availableCards > 6 ? 6 : availableCards;
+
     return Center(
       child: Wrap(
         spacing: 16,
         runSpacing: 16,
         alignment: WrapAlignment.center,
         children: List.generate(
-          6, // 6장의 카드를 펼쳐놓음
+          displayCount,
           (index) => _buildSelectableCard(index),
         ),
       ),

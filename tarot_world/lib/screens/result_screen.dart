@@ -1,6 +1,8 @@
 // lib/screens/result_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/app_config.dart';
+import '../providers/app_provider.dart';
 
 class ResultScreen extends StatefulWidget {
   final List<TarotCard> cards;
@@ -253,48 +255,8 @@ class _ResultScreenState extends State<ResultScreen>
 
             const SizedBox(height: 20),
 
-            // 카드 이미지 (Placeholder)
-            Container(
-              width: 200,
-              height: 300,
-              decoration: BoxDecoration(
-                color: const Color(0xFF9966CC),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.auto_awesome,
-                    size: 60,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    card.nameKo,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    card.nameEn,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // 카드 이미지
+            _buildCardImage(card),
 
             const SizedBox(height: 30),
 
@@ -433,5 +395,187 @@ class _ResultScreenState extends State<ResultScreen>
       default:
         return '';
     }
+  }
+
+  Widget _buildCardImage(TarotCard card) {
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    final currentStyle = appProvider.selectedCardStyle;
+    
+    return Container(
+      width: 200,
+      height: 300,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 배경 그라데이션
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    _getStyleColor(currentStyle).withOpacity(0.9),
+                    _getStyleColor(currentStyle).withOpacity(0.7),
+                  ],
+                ),
+              ),
+            ),
+            
+            // 카드 내용
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // 카드 아이콘
+                  Icon(
+                    _getCardIcon(card.nameEn),
+                    size: 80,
+                    color: Colors.white,
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // 카드 이름
+                  Text(
+                    card.nameKo,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  Text(
+                    card.nameEn,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  
+                  // 역방향 표시
+                  if (card.isReversed) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'REVERSED',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            
+            // 스타일 인디케이터
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _getStyleName(currentStyle),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getStyleColor(String style) {
+    switch (style) {
+      case 'vintage':
+        return const Color(0xFF8B4513); // 브라운
+      case 'cartoon':
+        return const Color(0xFF9966CC); // 퍼플
+      case 'modern':
+        return const Color(0xFF2D1B69); // 다크 퍼플
+      default:
+        return const Color(0xFF9966CC);
+    }
+  }
+
+  String _getStyleName(String style) {
+    switch (style) {
+      case 'vintage':
+        return '빈티지';
+      case 'cartoon':
+        return '카툰';
+      case 'modern':
+        return '모던';
+      default:
+        return '기본';
+    }
+  }
+
+  IconData _getCardIcon(String cardName) {
+    // 카드 이름에 따른 아이콘 매핑
+    final name = cardName.toLowerCase();
+    if (name.contains('fool')) return Icons.child_friendly;
+    if (name.contains('magician')) return Icons.auto_fix_high;
+    if (name.contains('priestess')) return Icons.psychology;
+    if (name.contains('empress')) return Icons.nature;
+    if (name.contains('emperor')) return Icons.shield;
+    if (name.contains('hierophant')) return Icons.menu_book;
+    if (name.contains('lovers')) return Icons.favorite;
+    if (name.contains('chariot')) return Icons.directions_car;
+    if (name.contains('strength')) return Icons.fitness_center;
+    if (name.contains('hermit')) return Icons.lightbulb;
+    if (name.contains('fortune')) return Icons.casino;
+    if (name.contains('justice')) return Icons.balance;
+    if (name.contains('hanged')) return Icons.accessibility;
+    if (name.contains('death')) return Icons.refresh;
+    if (name.contains('temperance')) return Icons.water_drop;
+    if (name.contains('devil')) return Icons.warning;
+    if (name.contains('tower')) return Icons.flash_on;
+    if (name.contains('star')) return Icons.star;
+    if (name.contains('moon')) return Icons.nightlight;
+    if (name.contains('sun')) return Icons.wb_sunny;
+    if (name.contains('judgement')) return Icons.gavel;
+    if (name.contains('world')) return Icons.public;
+    
+    // 수트별 아이콘
+    if (name.contains('wands') || name.contains('rods')) return Icons.whatshot;
+    if (name.contains('cups') || name.contains('chalices')) return Icons.local_drink;
+    if (name.contains('swords')) return Icons.flash_on;
+    if (name.contains('pentacles') || name.contains('coins')) return Icons.monetization_on;
+    
+    return Icons.auto_awesome; // 기본 아이콘
   }
 }

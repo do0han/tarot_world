@@ -60,11 +60,14 @@ class _MainScreenState extends State<MainScreen> {
         actions: [
           Consumer<AppProvider>(
             builder: (context, appProvider, child) {
-              final hasSettings = appProvider.appConfig?.toolbar.items.isNotEmpty ?? false;
-              return hasSettings ? IconButton(
-                icon: const Icon(Icons.settings),
-                onPressed: _openSettings,
-              ) : const SizedBox.shrink();
+              final hasSettings =
+                  appProvider.appConfig?.toolbar.items.isNotEmpty ?? false;
+              return hasSettings
+                  ? IconButton(
+                      icon: const Icon(Icons.settings),
+                      onPressed: _openSettings,
+                    )
+                  : const SizedBox.shrink();
             },
           ),
         ],
@@ -97,7 +100,7 @@ class _MainScreenState extends State<MainScreen> {
             }
 
             final menuItems = appProvider.appConfig?.menus ?? [];
-            
+
             if (menuItems.isEmpty) {
               return const Center(
                 child: Text(
