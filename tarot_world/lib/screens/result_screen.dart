@@ -139,6 +139,9 @@ class _ResultScreenState extends State<ResultScreen>
                   setState(() {
                     _currentCardIndex = index;
                   });
+                  // 페이지 변경 시 페이드 효과
+                  _fadeController.reset();
+                  _fadeController.forward();
                 },
                 itemCount: widget.cards.length,
                 itemBuilder: (context, index) {

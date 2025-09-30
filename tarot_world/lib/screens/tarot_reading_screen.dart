@@ -148,15 +148,20 @@ class _TarotReadingScreenState extends State<TarotReadingScreen>
     );
   }
 
-  void _selectCard(int index) {
+  void _selectCard(int index) async {
     if (_selectedCardIndices.length >= _cardCount) return;
 
     setState(() {
       _selectedCardIndices.add(index);
     });
 
+    // 카드 선택 애니메이션
+    await _cardFlipController.forward();
+    _cardFlipController.reset();
+
     // 모든 카드가 선택되면 결과 화면으로 이동
     if (_selectedCardIndices.length == _cardCount) {
+      await Future.delayed(const Duration(milliseconds: 500));
       _goToResult();
     }
   }
@@ -399,42 +404,64 @@ class _TarotReadingScreenState extends State<TarotReadingScreen>
 
     return GestureDetector(
       onTap: canSelect ? () => _selectCard(index) : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        width: 80,
-        height: 120,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.amber
-              : canSelect
-                  ? const Color(0xFF9966CC)
-                  : Colors.grey,
-          borderRadius: BorderRadius.circular(8),
-          border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: isSelected ? 15 : 5,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Center(
-          child: isSelected
-              ? Text(
-                  '${_selectedCardIndices.indexOf(index) + 1}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+      child: AnimatedBuilder(
+        animation: _cardFlipController,
+        builder: (context, child) {
+          return Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              ..rotateY(isSelected ? _cardFlipController.value * 3.14159 : 0),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 80,
+              height: 120,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.amber
+                    : canSelect
+                        ? const Color(0xFF9966CC)
+                        : Colors.grey,
+                borderRadius: BorderRadius.circular(8),
+                border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: isSelected ? 15 : 5,
+                    offset: const Offset(0, 3),
                   ),
-                )
-              : const Icon(
-                  Icons.auto_awesome,
-                  color: Colors.white,
-                  size: 30,
-                ),
-        ),
+                ],
+              ),
+              child: Center(
+                child: isSelected
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${_selectedCardIndices.indexOf(index) + 1}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Icon(
+                            Icons.check_circle,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ],
+                      )
+                    : const Icon(
+                        Icons.auto_awesome,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
