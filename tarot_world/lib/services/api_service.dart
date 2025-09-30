@@ -45,8 +45,7 @@ class NetworkException implements Exception {
 }
 
 class ApiService {
-  // 실제 서버 주소 또는 로컬 테스트 주소
-  // ※주의: Android 에뮬레이터에서 localhost에 접근하려면 10.0.2.2를 사용해야 합니다.
+  // Android 에뮬레이터에서 localhost 접근을 위한 주소
   static const String _baseUrl = "http://10.0.2.2:3000";
   static const Duration _timeout = Duration(seconds: 10);
 

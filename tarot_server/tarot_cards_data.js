@@ -435,6 +435,153 @@ const fullTarotDeck = [
     "description_reversed": "갈등에서 벗어나 화해나 용서를 시작할 수 있습니다."
   },
 
+  // ===== MINOR ARCANA - SWORDS (검, 공기) 나머지 카드들 =====
+  {
+    "id": 41,
+    "name_ko": "검 6",
+    "name_en": "Six of Swords",
+    "type": "minor",
+    "suit": "swords",
+    "number": 6,
+    "keywords": "여행, 전환, 평화, 회복",
+    "description_upright": "어려운 시기를 벗어나 평화로운 곳으로 이동하는 시기입니다.",
+    "description_reversed": "과거에 얽매여 앞으로 나아가지 못하고 있습니다."
+  },
+  {
+    "id": 42,
+    "name_ko": "검 7",
+    "name_en": "Seven of Swords",
+    "type": "minor",
+    "suit": "swords",
+    "number": 7,
+    "keywords": "기만, 도피, 전략, 독립",
+    "description_upright": "신중한 전략이나 독립적인 행동이 필요합니다.",
+    "description_reversed": "기만이나 도피 대신 정직한 대면이 필요합니다."
+  },
+  {
+    "id": 43,
+    "name_ko": "검 8",
+    "name_en": "Eight of Swords",
+    "type": "minor",
+    "suit": "swords",
+    "number": 8,
+    "keywords": "속박, 제한, 자기 의심, 혼란",
+    "description_upright": "스스로 만든 제약에 갇혀 있습니다. 해방이 필요합니다.",
+    "description_reversed": "제약에서 벗어나 자유를 되찾을 수 있습니다."
+  },
+  {
+    "id": 44,
+    "name_ko": "검 9",
+    "name_en": "Nine of Swords",
+    "type": "minor",
+    "suit": "swords",
+    "number": 9,
+    "keywords": "불안, 악몽, 걱정, 절망",
+    "description_upright": "깊은 불안과 걱정에 시달리고 있습니다. 도움을 구하세요.",
+    "description_reversed": "불안에서 벗어나 희망을 되찾을 수 있습니다."
+  },
+  {
+    "id": 45,
+    "name_ko": "검 10",
+    "name_en": "Ten of Swords",
+    "type": "minor",
+    "suit": "swords",
+    "number": 10,
+    "keywords": "종료, 배신, 고통, 재시작",
+    "description_upright": "고통스러운 끝이지만 새로운 시작의 기회입니다.",
+    "description_reversed": "최악의 상황에서 벗어나 회복이 시작됩니다."
+  },
+  {
+    "id": 46,
+    "name_ko": "검 페이지",
+    "name_en": "Page of Swords",
+    "type": "minor",
+    "suit": "swords",
+    "number": 11,
+    "keywords": "호기심, 감시, 새로운 아이디어, 소식",
+    "description_upright": "새로운 아이디어나 정보가 들어올 것입니다.",
+    "description_reversed": "정보가 불완전하거나 소문에 주의해야 합니다."
+  },
+  {
+    "id": 47,
+    "name_ko": "검 나이트",
+    "name_en": "Knight of Swords",
+    "type": "minor",
+    "suit": "swords",
+    "number": 12,
+    "keywords": "행동, 충동, 용기, 성급함",
+    "description_upright": "빠른 행동과 결단력이 필요한 시기입니다.",
+    "description_reversed": "성급한 행동이나 무모함을 조심해야 합니다."
+  },
+  {
+    "id": 48,
+    "name_ko": "검 퀸",
+    "name_en": "Queen of Swords",
+    "type": "minor",
+    "suit": "swords",
+    "number": 13,
+    "keywords": "명확성, 독립, 지성, 직설적",
+    "description_upright": "명확하고 직설적인 의사소통이 필요합니다.",
+    "description_reversed": "냉정함이 지나쳐 상처를 줄 수 있습니다."
+  },
+  {
+    "id": 49,
+    "name_ko": "검 킹",
+    "name_en": "King of Swords",
+    "type": "minor",
+    "suit": "swords",
+    "number": 14,
+    "keywords": "권위, 지성, 공정함, 결단력",
+    "description_upright": "공정하고 논리적인 판단력으로 결정을 내리세요.",
+    "description_reversed": "독단적이거나 냉혹한 결정을 경계해야 합니다."
+  },
+
+  // ===== MINOR ARCANA - CUPS (컵, 물) 나머지 카드들 =====
+  {
+    "id": 50,
+    "name_ko": "컵 페이지",
+    "name_en": "Page of Cups",
+    "type": "minor",
+    "suit": "cups",
+    "number": 11,
+    "keywords": "직감, 창의성, 감정적 메시지, 예술",
+    "description_upright": "창의적 영감이나 감정적 메시지가 전해질 것입니다.",
+    "description_reversed": "감정적 미숙함이나 창의적 막힘이 있을 수 있습니다."
+  },
+  {
+    "id": 51,
+    "name_ko": "컵 나이트",
+    "name_en": "Knight of Cups",
+    "type": "minor",
+    "suit": "cups",
+    "number": 12,
+    "keywords": "로맨스, 매력, 감정, 이상주의",
+    "description_upright": "로맨틱하고 감정적인 접근이 필요한 시기입니다.",
+    "description_reversed": "감정에 치우쳐 현실을 보지 못할 수 있습니다."
+  },
+  {
+    "id": 52,
+    "name_ko": "컵 퀸",
+    "name_en": "Queen of Cups",
+    "type": "minor",
+    "suit": "cups",
+    "number": 13,
+    "keywords": "직감, 연민, 감정적 지원, 영성",
+    "description_upright": "직감과 연민으로 다른 사람을 도울 수 있습니다.",
+    "description_reversed": "감정적으로 불안정하거나 의존적이 될 수 있습니다."
+  },
+  {
+    "id": 53,
+    "name_ko": "컵 킹",
+    "name_en": "King of Cups",
+    "type": "minor",
+    "suit": "cups",
+    "number": 14,
+    "keywords": "감정 조절, 연민, 지혜, 균형",
+    "description_upright": "감정과 이성의 균형을 이루며 지혜롭게 행동하세요.",
+    "description_reversed": "감정 조절이 어렵거나 변덕스러울 수 있습니다."
+  },
+
   // ===== MINOR ARCANA - WANDS (지팡이, 불) 14장 =====
   {
     "id": 54,
@@ -457,6 +604,138 @@ const fullTarotDeck = [
     "keywords": "계획, 개인적 힘, 미래 전망, 결정",
     "description_upright": "미래에 대한 계획을 세우고 결정을 내릴 시기입니다.",
     "description_reversed": "계획 부족이나 우유부단함으로 기회를 놓칠 수 있습니다."
+  },
+  {
+    "id": 56,
+    "name_ko": "지팡이 3",
+    "name_en": "Three of Wands",
+    "type": "minor",
+    "suit": "wands",
+    "number": 3,
+    "keywords": "확장, 미래 계획, 탐험, 기회",
+    "description_upright": "사업이나 계획이 확장되고 있습니다. 새로운 기회를 탐색하세요.",
+    "description_reversed": "확장이 지연되거나 계획에 차질이 생길 수 있습니다."
+  },
+  {
+    "id": 57,
+    "name_ko": "지팡이 4",
+    "name_en": "Four of Wands",
+    "type": "minor",
+    "suit": "wands",
+    "number": 4,
+    "keywords": "축하, 안정, 성취, 화합",
+    "description_upright": "목표를 달성하고 축하할 일이 생깁니다. 안정적인 기반이 마련됩니다.",
+    "description_reversed": "불안정하거나 축하가 연기될 수 있습니다."
+  },
+  {
+    "id": 58,
+    "name_ko": "지팡이 5",
+    "name_en": "Five of Wands",
+    "type": "minor",
+    "suit": "wands",
+    "number": 5,
+    "keywords": "경쟁, 갈등, 투쟁, 도전",
+    "description_upright": "경쟁이나 갈등 상황에 처해있습니다. 건설적인 해결책을 찾으세요.",
+    "description_reversed": "갈등이 해결되거나 경쟁에서 벗어날 수 있습니다."
+  },
+  {
+    "id": 59,
+    "name_ko": "지팡이 6",
+    "name_en": "Six of Wands",
+    "type": "minor",
+    "suit": "wands",
+    "number": 6,
+    "keywords": "승리, 성공, 인정, 자신감",
+    "description_upright": "성공과 승리를 거두며 인정받는 시기입니다. 자신감을 가지세요.",
+    "description_reversed": "성공이 지연되거나 인정받지 못할 수 있습니다."
+  },
+  {
+    "id": 60,
+    "name_ko": "지팡이 7",
+    "name_en": "Seven of Wands",
+    "type": "minor",
+    "suit": "wands",
+    "number": 7,
+    "keywords": "방어, 도전, 경쟁, 용기",
+    "description_upright": "도전을 받고 있지만 용기를 내어 맞서야 합니다. 당신의 입장을 지키세요.",
+    "description_reversed": "압박에 굴복하거나 포기하고 싶은 마음이 들 수 있습니다."
+  },
+  {
+    "id": 61,
+    "name_ko": "지팡이 8",
+    "name_en": "Eight of Wands",
+    "type": "minor",
+    "suit": "wands",
+    "number": 8,
+    "keywords": "속도, 빠른 변화, 진전, 소식",
+    "description_upright": "상황이 빠르게 진전되고 있습니다. 좋은 소식이 들려올 것입니다.",
+    "description_reversed": "지연이나 좌절, 계획의 차질이 있을 수 있습니다."
+  },
+  {
+    "id": 62,
+    "name_ko": "지팡이 9",
+    "name_en": "Nine of Wands",
+    "type": "minor",
+    "suit": "wands",
+    "number": 9,
+    "keywords": "인내, 방어, 경계, 지구력",
+    "description_upright": "거의 목표에 도달했습니다. 마지막까지 인내하며 경계를 늦추지 마세요.",
+    "description_reversed": "지쳐서 포기하고 싶거나 마지막 순간에 실수할 수 있습니다."
+  },
+  {
+    "id": 63,
+    "name_ko": "지팡이 10",
+    "name_en": "Ten of Wands",
+    "type": "minor",
+    "suit": "wands",
+    "number": 10,
+    "keywords": "부담, 책임, 과로, 완성",
+    "description_upright": "많은 책임과 부담을 지고 있습니다. 완성이 가까워졌으니 조금만 더 견디세요.",
+    "description_reversed": "부담을 덜거나 책임을 나누어 가질 필요가 있습니다."
+  },
+  {
+    "id": 64,
+    "name_ko": "지팡이 페이지",
+    "name_en": "Page of Wands",
+    "type": "minor",
+    "suit": "wands",
+    "number": 11,
+    "keywords": "새로운 소식, 창의성, 모험, 학습",
+    "description_upright": "새로운 프로젝트나 모험적인 아이디어가 떠오릅니다.",
+    "description_reversed": "불안정하거나 계획이 미숙할 수 있습니다."
+  },
+  {
+    "id": 65,
+    "name_ko": "지팡이 나이트",
+    "name_en": "Knight of Wands",
+    "type": "minor",
+    "suit": "wands",
+    "number": 12,
+    "keywords": "행동, 충동, 모험, 급진적",
+    "description_upright": "행동력이 넘치고 모험적인 시기입니다. 과감하게 도전하세요.",
+    "description_reversed": "성급하거나 무모한 행동을 조심해야 합니다."
+  },
+  {
+    "id": 66,
+    "name_ko": "지팡이 퀸",
+    "name_en": "Queen of Wands",
+    "type": "minor",
+    "suit": "wands",
+    "number": 13,
+    "keywords": "자신감, 독립, 매력, 리더십",
+    "description_upright": "자신감과 카리스마로 주변을 이끌어 가는 시기입니다.",
+    "description_reversed": "독선적이거나 질투심이 강해질 수 있습니다."
+  },
+  {
+    "id": 67,
+    "name_ko": "지팡이 킹",
+    "name_en": "King of Wands",
+    "type": "minor",
+    "suit": "wands",
+    "number": 14,
+    "keywords": "리더십, 비전, 기업가 정신, 성취",
+    "description_upright": "강력한 리더십으로 큰 성취를 이룰 수 있습니다.",
+    "description_reversed": "권위적이거나 성급한 결정을 조심해야 합니다."
   },
 
   // ===== MINOR ARCANA - PENTACLES (오각별, 흙) 14장 =====
@@ -481,6 +760,138 @@ const fullTarotDeck = [
     "keywords": "균형, 변화, 적응, 유연성",
     "description_upright": "변화하는 상황에 유연하게 적응하며 균형을 유지해야 합니다.",
     "description_reversed": "균형을 잃고 혼란스러운 상황에 처할 수 있습니다."
+  },
+  {
+    "id": 70,
+    "name_ko": "오각별 3",
+    "name_en": "Three of Pentacles",
+    "type": "minor",
+    "suit": "pentacles",
+    "number": 3,
+    "keywords": "협력, 팀워크, 기술, 학습",
+    "description_upright": "팀워크와 협력을 통해 좋은 결과를 얻을 수 있습니다.",
+    "description_reversed": "협력이 부족하거나 갈등이 생길 수 있습니다."
+  },
+  {
+    "id": 71,
+    "name_ko": "오각별 4",
+    "name_en": "Four of Pentacles",
+    "type": "minor",
+    "suit": "pentacles",
+    "number": 4,
+    "keywords": "절약, 보수, 안정, 인색",
+    "description_upright": "안정을 추구하며 신중하게 관리하는 시기입니다.",
+    "description_reversed": "과도한 절약이나 인색함을 경계해야 합니다."
+  },
+  {
+    "id": 72,
+    "name_ko": "오각별 5",
+    "name_en": "Five of Pentacles",
+    "type": "minor",
+    "suit": "pentacles",
+    "number": 5,
+    "keywords": "곤궁, 고난, 불안, 고립",
+    "description_upright": "경제적 어려움이나 고립감을 경험할 수 있습니다. 도움을 요청하세요.",
+    "description_reversed": "어려움에서 벗어나거나 도움을 받을 수 있습니다."
+  },
+  {
+    "id": 73,
+    "name_ko": "오각별 6",
+    "name_en": "Six of Pentacles",
+    "type": "minor",
+    "suit": "pentacles",
+    "number": 6,
+    "keywords": "관대함, 나눔, 균형, 호혜",
+    "description_upright": "나누고 베푸는 마음으로 균형을 이루는 시기입니다.",
+    "description_reversed": "불평등하거나 일방적인 관계에 주의하세요."
+  },
+  {
+    "id": 74,
+    "name_ko": "오각별 7",
+    "name_en": "Seven of Pentacles",
+    "type": "minor",
+    "suit": "pentacles",
+    "number": 7,
+    "keywords": "평가, 인내, 재고, 성과",
+    "description_upright": "지금까지의 노력을 점검하고 성과를 평가하는 시기입니다.",
+    "description_reversed": "참을성이 부족하거나 조급해할 수 있습니다."
+  },
+  {
+    "id": 75,
+    "name_ko": "오각별 8",
+    "name_en": "Eight of Pentacles",
+    "type": "minor",
+    "suit": "pentacles",
+    "number": 8,
+    "keywords": "기술, 숙련, 노력, 완성",
+    "description_upright": "기술을 연마하고 완성도를 높이는 시기입니다. 노력이 결실을 맺습니다.",
+    "description_reversed": "기술 부족이나 완성도가 떨어질 수 있습니다."
+  },
+  {
+    "id": 76,
+    "name_ko": "오각별 9",
+    "name_en": "Nine of Pentacles",
+    "type": "minor",
+    "suit": "pentacles",
+    "number": 9,
+    "keywords": "풍요, 독립, 성취, 여유",
+    "description_upright": "물질적 풍요와 독립적인 성취를 누리는 시기입니다.",
+    "description_reversed": "재정적 불안정이나 의존적인 상황이 될 수 있습니다."
+  },
+  {
+    "id": 77,
+    "name_ko": "오각별 10",
+    "name_en": "Ten of Pentacles",
+    "type": "minor",
+    "suit": "pentacles",
+    "number": 10,
+    "keywords": "유산, 가족, 안정, 전통",
+    "description_upright": "가족과 함께 안정적인 기반을 구축하는 시기입니다.",
+    "description_reversed": "가족 갈등이나 재정적 불안정이 있을 수 있습니다."
+  },
+  {
+    "id": 78,
+    "name_ko": "오각별 페이지",
+    "name_en": "Page of Pentacles",
+    "type": "minor",
+    "suit": "pentacles",
+    "number": 11,
+    "keywords": "학습, 새로운 기회, 실용성, 시작",
+    "description_upright": "새로운 학습이나 실용적인 기회가 주어집니다.",
+    "description_reversed": "계획이 불충분하거나 실행력이 부족할 수 있습니다."
+  },
+  {
+    "id": 79,
+    "name_ko": "오각별 나이트",
+    "name_en": "Knight of Pentacles",
+    "type": "minor",
+    "suit": "pentacles",
+    "number": 12,
+    "keywords": "인내, 책임감, 신뢰성, 근면",
+    "description_upright": "꾸준하고 신뢰할 수 있는 접근으로 목표를 달성합니다.",
+    "description_reversed": "게으르거나 너무 보수적일 수 있습니다."
+  },
+  {
+    "id": 80,
+    "name_ko": "오각별 퀸",
+    "name_en": "Queen of Pentacles",
+    "type": "minor",
+    "suit": "pentacles",
+    "number": 13,
+    "keywords": "풍요, 실용성, 보살핌, 안정",
+    "description_upright": "실용적이고 풍요로운 환경을 만들어가는 시기입니다.",
+    "description_reversed": "물질주의에 치우치거나 소홀함이 있을 수 있습니다."
+  },
+  {
+    "id": 81,
+    "name_ko": "오각별 킹",
+    "name_en": "King of Pentacles",
+    "type": "minor",
+    "suit": "pentacles",
+    "number": 14,
+    "keywords": "성공, 풍요, 관대함, 사업가",
+    "description_upright": "사업적 성공과 물질적 풍요를 달성하는 시기입니다.",
+    "description_reversed": "탐욕이나 부정직한 방법을 경계해야 합니다."
   }
 ];
 

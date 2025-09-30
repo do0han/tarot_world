@@ -20,15 +20,22 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeApp();
+    // 위젯 빌드 완료 후 초기화 시작
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeApp();
+    });
   }
 
   Future<void> _initializeApp() async {
+    if (!mounted) return;
+    
     final appProvider = Provider.of<AppProvider>(context, listen: false);
 
     try {
       await appProvider.initialize();
-      _navigateToNextScreen();
+      if (mounted) {
+        _navigateToNextScreen();
+      }
     } catch (e) {
       // 에러는 AppProvider에서 처리되므로 여기서는 별도 처리 불필요
       print('초기화 중 오류: $e');
