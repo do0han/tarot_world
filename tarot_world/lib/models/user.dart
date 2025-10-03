@@ -25,7 +25,9 @@ class User {
       username: json['username'],
       email: json['email'],
       coinBalance: json['coinBalance'],
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(), // 기본값으로 현재 시간 사용
       lastLoginAt: json['lastLoginAt'] != null 
           ? DateTime.parse(json['lastLoginAt']) 
           : null,

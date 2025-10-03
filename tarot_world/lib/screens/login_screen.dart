@@ -304,7 +304,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
                 
                 // 서버 상태 안내
                 const Text(
@@ -315,6 +315,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 16),
               ],
             ),
           ),

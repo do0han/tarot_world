@@ -10,12 +10,14 @@ class TarotReadingScreen extends StatefulWidget {
   final String uiType; // 'single_card' 또는 'three_card_spread'
   final String? keyword; // 'love', 'money', 'work' 등
   final String title; // 메뉴 제목
+  final MenuItem? menuItem; // 결제 정보를 위한 메뉴 아이템
 
   const TarotReadingScreen({
     super.key,
     required this.uiType,
     this.keyword,
     required this.title,
+    this.menuItem,
   });
 
   @override

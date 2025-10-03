@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:shared_preferences/shared_preferences.dart'; // 안드로이드 빌드 문제로 임시 제거
 import '../models/user.dart';
 
 class AuthService {
@@ -22,6 +22,9 @@ class AuthService {
   // 사용자 로그인
   static Future<User> login(String username) async {
     try {
+      print('Attempting login to: $baseUrl/auth/login');
+      print('Username: $username');
+      
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
@@ -33,8 +36,8 @@ class AuthService {
         if (data['success']) {
           final user = User.fromJson(data['data']['user']);
           
-          // 자동 로그인을 위해 로컬에 사용자 정보 저장
-          await _saveUserToLocal(user);
+          // 자동 로그인을 위해 로컬에 사용자 정보 저장 (임시 비활성화)
+          // await _saveUserToLocal(user);
           
           return user;
         } else {
@@ -123,24 +126,25 @@ class AuthService {
     }
   }
 
-  // 로컬에 사용자 정보 저장 (자동 로그인용)
-  static Future<void> _saveUserToLocal(User user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_data', jsonEncode(user.toJson()));
-    await prefs.setInt('user_id', user.id);
-    await prefs.setString('username', user.username);
-  }
+  // 로컬에 사용자 정보 저장 (자동 로그인용) - 임시 비활성화
+  // static Future<void> _saveUserToLocal(User user) async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   await prefs.setString('user_data', jsonEncode(user.toJson()));
+  //   await prefs.setInt('user_id', user.id);
+  //   await prefs.setString('username', user.username);
+  // }
 
-  // 로컬에서 사용자 정보 조회
+  // 로컬에서 사용자 정보 조회 - 임시 비활성화
   static Future<User?> getLocalUser() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userData = prefs.getString('user_data');
+      // SharedPreferences 임시 비활성화
+      // final prefs = await SharedPreferences.getInstance();
+      // final userData = prefs.getString('user_data');
       
-      if (userData != null) {
-        final userJson = jsonDecode(userData);
-        return User.fromJson(userJson);
-      }
+      // if (userData != null) {
+      //   final userJson = jsonDecode(userData);
+      //   return User.fromJson(userJson);
+      // }
       return null;
     } catch (e) {
       print('로컬 사용자 정보 조회 오류: $e');
@@ -148,30 +152,38 @@ class AuthService {
     }
   }
 
-  // 자동 로그인 체크
+  // 자동 로그인 체크 - 임시 비활성화
   static Future<bool> isLoggedIn() async {
-    final user = await getLocalUser();
-    return user != null;
+    // final user = await getLocalUser();
+    // return user != null;
+    return false; // 임시로 항상 false 반환
   }
 
-  // 로그아웃
+  // 로그아웃 - 임시 비활성화
   static Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_data');
-    await prefs.remove('user_id');
-    await prefs.remove('username');
+    // SharedPreferences 임시 비활성화
+    // final prefs = await SharedPreferences.getInstance();
+    // await prefs.remove('user_data');
+    // await prefs.remove('user_id');
+    // await prefs.remove('username');
   }
 
   // 서버 연결 테스트
   static Future<bool> testConnection() async {
     try {
+      print('Testing connection to: $baseUrl/app-config');
+      
       final response = await http.get(
         Uri.parse('$baseUrl/app-config'),
         headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(const Duration(seconds: 10));
 
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body.substring(0, 100)}...');
+      
       return response.statusCode == 200;
     } catch (e) {
+      print('Connection test failed: $e');
       return false;
     }
   }

@@ -26,16 +26,65 @@ class _MainScreenState extends State<MainScreen> {
     'default': Icons.auto_awesome,
   };
 
-  void _navigateToTarotReading(MenuItem menuItem) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => TarotReadingScreen(
-          uiType: menuItem.uiType ?? 'single_card',
-          keyword: menuItem.keyword,
-          title: menuItem.title,
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    if (!mounted) return;
+    
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    
+    // 앱 데이터가 로드되지 않았다면 초기화
+    if (!appProvider.isInitialized) {
+      await appProvider.initialize();
+    }
+  }
+
+  void _navigateToTarotReading(MenuItem menuItem) async {
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    final isFree = menuItem.isFree ?? true;
+    final requiredCoins = menuItem.requiredCoins ?? 0;
+    
+    // 무료 콘텐츠는 바로 이동
+    if (isFree) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => TarotReadingScreen(
+            uiType: menuItem.uiType ?? 'single_card',
+            keyword: menuItem.keyword,
+            title: menuItem.title,
+            menuItem: menuItem,
+          ),
         ),
-      ),
-    );
+      );
+      return;
+    }
+    
+    // 유료 콘텐츠 - 결제 확인 다이얼로그 표시
+    final shouldPurchase = await _showPurchaseConfirmation(menuItem, requiredCoins);
+    if (shouldPurchase == true) {
+      // 코인 잔액 확인
+      final currentCoins = appProvider.currentUser?.coinBalance ?? 0;
+      if (currentCoins < requiredCoins) {
+        _showInsufficientCoinsDialog(requiredCoins, currentCoins);
+        return;
+      }
+      
+      // 타로 리딩 화면으로 이동 (결제는 타로 리딩 완료 후 처리)
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => TarotReadingScreen(
+            uiType: menuItem.uiType ?? 'single_card',
+            keyword: menuItem.keyword,
+            title: menuItem.title,
+            menuItem: menuItem,
+          ),
+        ),
+      );
+    }
   }
 
   IconData _getMenuIcon(String? keyword) {
@@ -331,6 +380,264 @@ class _MainScreenState extends State<MainScreen> {
         return '과거-현재-미래 직업운';
       default:
         return '오늘 하루 운세';
+    }
+  }
+
+  // 결제 확인 다이얼로그
+  Future<bool?> _showPurchaseConfirmation(MenuItem menuItem, int requiredCoins) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.payment, color: Colors.deepPurple.shade600),
+              const SizedBox(width: 8),
+              const Text('프리미엄 운세'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.deepPurple.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      menuItem.title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      menuItem.description ?? '더 정확하고 상세한 운세를 확인하세요',
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.monetization_on, color: Colors.amber.shade700),
+                    const SizedBox(width: 8),
+                    Text(
+                      '필요 코인: $requiredCoins개',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Consumer<AppProvider>(
+                builder: (context, appProvider, child) {
+                  final currentCoins = appProvider.currentUser?.coinBalance ?? 0;
+                  final hasEnoughCoins = currentCoins >= requiredCoins;
+                  
+                  return Row(
+                    children: [
+                      Icon(
+                        hasEnoughCoins ? Icons.check_circle : Icons.error,
+                        color: hasEnoughCoins ? Colors.green : Colors.red,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '현재 잔액: $currentCoins개',
+                        style: TextStyle(
+                          color: hasEnoughCoins ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('취소'),
+            ),
+            Consumer<AppProvider>(
+              builder: (context, appProvider, child) {
+                final currentCoins = appProvider.currentUser?.coinBalance ?? 0;
+                final hasEnoughCoins = currentCoins >= requiredCoins;
+                
+                return ElevatedButton.icon(
+                  onPressed: hasEnoughCoins 
+                    ? () => Navigator.of(context).pop(true)
+                    : null,
+                  icon: const Icon(Icons.auto_awesome),
+                  label: Text(hasEnoughCoins ? '운세 보기' : '코인 부족'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: hasEnoughCoins ? Colors.deepPurple : Colors.grey,
+                    foregroundColor: Colors.white,
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 코인 부족 다이얼로그
+  void _showInsufficientCoinsDialog(int requiredCoins, int currentCoins) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.error, color: Colors.red),
+              SizedBox(width: 8),
+              Text('코인 부족'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '필요한 코인: $requiredCoins개',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '현재 보유: $currentCoins개',
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '부족한 코인: ${requiredCoins - currentCoins}개',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '코인을 충전하시겠습니까?',
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• 광고 시청으로 +5 코인을 받을 수 있습니다',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('나중에'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _watchAdForCoins();
+              },
+              icon: const Icon(Icons.play_circle_filled),
+              label: const Text('광고 시청'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 광고 시청으로 코인 획득
+  Future<void> _watchAdForCoins() async {
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    
+    // 광고 시청 시뮬레이션 로딩
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('광고를 재생 중입니다...'),
+          ],
+        ),
+      ),
+    );
+
+    // 2초 대기 (광고 시청 시뮬레이션)
+    await Future.delayed(const Duration(seconds: 2));
+    
+    if (mounted) {
+      Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
+    }
+
+    // 실제 광고 보상 처리
+    final success = await appProvider.watchAdReward();
+    
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('광고 시청 완료! +5 코인을 받았습니다'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Text('광고 보상 처리에 실패했습니다'),
+              ],
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
