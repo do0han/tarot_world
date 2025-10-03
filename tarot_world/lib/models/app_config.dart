@@ -133,7 +133,7 @@ class ToolbarItem {
   }
 }
 
-// 메뉴 아이템 정보 (확장됨)
+// 메뉴 아이템 정보 (V2.0 확장됨)
 class MenuItem {
   final String title;
   final String category;
@@ -141,6 +141,9 @@ class MenuItem {
   final String? keyword;
   final String? description;
   final int position;
+  final bool? isFree;
+  final int? requiredCoins;
+  final String? spreadType;
 
   MenuItem({
     required this.title,
@@ -149,6 +152,9 @@ class MenuItem {
     this.keyword,
     this.description,
     required this.position,
+    this.isFree,
+    this.requiredCoins,
+    this.spreadType,
   });
 
   factory MenuItem.fromJson(Map<String, dynamic> json) {
@@ -159,6 +165,9 @@ class MenuItem {
       keyword: json['keyword'],
       description: json['description'],
       position: json['position'],
+      isFree: json['isFree'],
+      requiredCoins: json['requiredCoins'],
+      spreadType: json['spreadType'],
     );
   }
 }

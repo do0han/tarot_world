@@ -7,11 +7,19 @@ const port = 3000;
 // JSON 파싱 미들웨어 추가
 app.use(express.json());
 
-// CORS(Cross-Origin Resource Sharing) 헤더 추가 (에러 방지용)
+// CORS(Cross-Origin Resource Sharing) 헤더 추가 (Flutter 웹 지원)
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+    res.header('Access-Control-Allow-Credentials', 'false');
+    
+    // Preflight 요청 처리
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+    
     next();
 });
 
