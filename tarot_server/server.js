@@ -1,13 +1,22 @@
-// server.js - Tarot Constellation 백엔드
+// server.js - Tarot Constellation V2.0 백엔드
 const express = require('express');
+const V2ApiHandler = require('./v2_apis');
 const app = express();
 const port = 3000;
+
+// JSON 파싱 미들웨어 추가
+app.use(express.json());
 
 // CORS(Cross-Origin Resource Sharing) 헤더 추가 (에러 방지용)
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     next();
 });
+
+// V2 API 핸들러 인스턴스
+const v2Api = new V2ApiHandler();
 
 // ===== 데이터베이스 스키마 시뮬레이션 =====
 
@@ -136,17 +145,20 @@ function createResponse(success, data, error = null, statusCode = 200) {
   };
 }
 
-// /app-config 엔드포인트 (확장됨)
-app.get('/app-config', (req, res) => {
+// /app-config 엔드포인트 (V2.0 업그레이드 - 데이터베이스 조회)
+app.get('/app-config', async (req, res) => {
   try {
+    // 데이터베이스에서 최신 메뉴 데이터 조회
+    const menus = await v2Api.getMenusFromDatabase();
+    
     const responseData = {
       ...appConfig,
-      "menus": appMenus,
+      "menus": menus,
       "fcmTopics": [],
       "availableStyles": availableStyles
     };
 
-    console.log(`[${new Date().toLocaleTimeString()}] /app-config 요청 받음. "Tarot Constellation" 데이터 전송.`);
+    console.log(`[${new Date().toLocaleTimeString()}] /app-config 요청 받음. "Tarot Constellation" 데이터 전송. (메뉴 ${menus.length}개)`);
     res.json(createResponse(true, responseData));
   } catch (error) {
     console.error('App config 로딩 오류:', error);
@@ -231,10 +243,49 @@ app.get('/draw-cards', (req, res) => {
   }
 });
 
+// ===== V2.0 새로운 API 엔드포인트 =====
+
+// 사용자 로그인
+app.post('/auth/login', (req, res) => {
+  v2Api.loginUser(req, res);
+});
+
+// 사용자 프로필 조회
+app.get('/user/profile/:userId', (req, res) => {
+  v2Api.getUserProfile(req, res);
+});
+
+// 타로 리딩 실행 (핵심 API)
+app.post('/tarot/read', (req, res) => {
+  v2Api.executeTarotReading(req, res);
+});
+
+// 광고 시청 보상
+app.post('/user/watch-ad', (req, res) => {
+  v2Api.watchAdReward(req, res);
+});
+
+// 사용자 리딩 히스토리 조회
+app.get('/user/history/:userId', (req, res) => {
+  v2Api.getUserHistory(req, res);
+});
+
+// 코인 관리 (충전/차감)
+app.put('/user/coins', (req, res) => {
+  v2Api.manageCoins(req, res);
+});
+
 app.listen(port, () => {
-  console.log(`Tarot Constellation 서버가 http://localhost:${port} 에서 실행 중입니다.`);
-  console.log(`API 엔드포인트:`);
+  console.log(`🚀 Tarot Constellation V2.0 서버가 http://localhost:${port} 에서 실행 중입니다.`);
+  console.log(`\n📡 V1.0 API 엔드포인트:`);
   console.log(`- GET /app-config : 앱 설정 및 메뉴 데이터`);
   console.log(`- GET /tarot-cards : 전체 타로 카드 데이터`);
   console.log(`- GET /draw-cards?count=3&style=vintage : 랜덤 카드 뽑기`);
+  console.log(`\n🆕 V2.0 API 엔드포인트:`);
+  console.log(`- POST /auth/login : 사용자 로그인`);
+  console.log(`- GET /user/profile/:userId : 사용자 프로필 조회`);
+  console.log(`- POST /tarot/read : 타로 리딩 실행`);
+  console.log(`- POST /user/watch-ad : 광고 시청 보상`);
+  console.log(`- GET /user/history/:userId : 리딩 히스토리 조회`);
+  console.log(`- PUT /user/coins : 코인 관리`);
 });
