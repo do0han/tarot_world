@@ -8,6 +8,7 @@ import '../widgets/coin_balance_widget.dart';
 import 'settings_screen.dart';
 import 'tarot_reading_screen.dart';
 import 'login_screen.dart';
+import 'reading_history_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -97,6 +98,12 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  void _openHistory() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const ReadingHistoryScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -123,6 +130,8 @@ class _MainScreenState extends State<MainScreen> {
                     await _handleLogout(appProvider);
                   } else if (value == 'settings') {
                     _openSettings();
+                  } else if (value == 'history') {
+                    _openHistory();
                   }
                 },
                 itemBuilder: (context) => [
@@ -144,6 +153,16 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                   ),
                   const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'history',
+                    child: Row(
+                      children: [
+                        Icon(Icons.history),
+                        SizedBox(width: 8),
+                        Text('리딩 기록'),
+                      ],
+                    ),
+                  ),
                   const PopupMenuItem(
                     value: 'settings',
                     child: Row(
@@ -186,6 +205,7 @@ class _MainScreenState extends State<MainScreen> {
             if (appProvider.isLoading) {
               return const LoadingWidget(
                 message: '메뉴 데이터를 불러오는 중...',
+                type: LoadingType.standard,
               );
             }
 
@@ -245,7 +265,7 @@ class _MainScreenState extends State<MainScreen> {
                           crossAxisCount: 2,
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
-                          childAspectRatio: 1.1,
+                          childAspectRatio: 1.3,
                         ),
                         itemCount: menuItems.length,
                         itemBuilder: (context, index) {
@@ -297,33 +317,41 @@ class _MainScreenState extends State<MainScreen> {
             children: [
               // 메인 콘텐츠
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       _getMenuIcon(menuItem.keyword),
-                      size: 48,
+                      size: 40,
                       color: Colors.white,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      menuItem.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(height: 12),
+                    Flexible(
+                      child: Text(
+                        menuItem.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      menuItem.description ?? _getMenuDescription(menuItem.keyword),
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
+                    const SizedBox(height: 6),
+                    Flexible(
+                      child: Text(
+                        menuItem.description ?? _getMenuDescription(menuItem.keyword),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),

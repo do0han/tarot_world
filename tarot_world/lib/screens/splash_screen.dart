@@ -184,6 +184,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   ] else if (appProvider.isLoading) ...[
                     const LoadingWidget(
                       message: '타로 카드 데이터를 불러오는 중...',
+                      type: LoadingType.mystical,
                     ),
                   ] else if (appProvider.isInitialized) ...[
                     const Text(
@@ -211,6 +212,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   ] else ...[
                     const LoadingWidget(
                       message: '앱을 시작하는 중...',
+                      type: LoadingType.tarotCards,
                     ),
                   ],
                 ],

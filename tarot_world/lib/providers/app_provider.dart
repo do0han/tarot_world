@@ -48,6 +48,16 @@ class AppProvider with ChangeNotifier {
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
 
+  // 테마 설정
+  ThemeMode _themeMode = ThemeMode.dark;
+  ThemeMode get themeMode => _themeMode;
+
+  bool _isHighContrastMode = false;
+  bool get isHighContrastMode => _isHighContrastMode;
+
+  bool _reduceAnimations = false;
+  bool get reduceAnimations => _reduceAnimations;
+
   // 캐시 관리
   DateTime? _lastFetchTime;
   static const Duration _cacheTimeout = Duration(minutes: 30);
@@ -59,11 +69,22 @@ class AppProvider with ChangeNotifier {
   // API 서비스 인스턴스
   final ApiService _apiService = ApiService();
 
-  // 초기 데이터 로드
+  // 초기 데이터 로드 (강화된 오류 처리)
   Future<void> initialize() async {
     if (isCacheValid && isInitialized) {
       print('캐시된 데이터 사용');
       return;
+    }
+
+    // 네트워크 연결 테스트
+    final connectionResult = await AuthService.testConnection();
+    if (connectionResult['success'] != true) {
+      // 네트워크 복구 시도
+      final recovered = await AuthService.attemptRecovery();
+      if (!recovered) {
+        _handleError('서버에 연결할 수 없습니다', Exception(connectionResult['message']));
+        return;
+      }
     }
 
     await fetchAppConfig();
@@ -167,6 +188,100 @@ class AppProvider with ChangeNotifier {
     }
   }
 
+  // 코인 차감 (프리미엄 기능 사용)
+  Future<int> deductCoins(int amount) async {
+    if (_currentUser == null) {
+      throw Exception('로그인이 필요합니다');
+    }
+    
+    try {
+      final newBalance = await AuthService.manageCoins(_currentUser!.id, amount, 'deduct');
+      print('코인 차감 완료: ${amount}코인 차감, 새 잔액: ${newBalance}코인');
+      return newBalance;
+    } catch (e) {
+      print('코인 차감 실패: $e');
+      throw Exception('코인 차감 실패: $e');
+    }
+  }
+
+  // V2.0 타로 리딩 실행 (코인 차감 포함) - 입력 유효성 검사 강화
+  Future<Map<String, dynamic>> executePaidTarotReading(int menuId, int cardCount) async {
+    if (_currentUser == null) {
+      throw Exception('로그인이 필요합니다');
+    }
+
+    try {
+      // 입력 유효성 검사
+      if (menuId <= 0) {
+        throw Exception('유효하지 않은 메뉴가 선택되었습니다');
+      }
+      
+      if (cardCount <= 0 || cardCount > 10) {
+        throw Exception('카드 개수는 1장에서 10장 사이여야 합니다');
+      }
+
+      // 메뉴 정보 확인
+      if (_appConfig?.menus == null) {
+        throw Exception('메뉴 정보를 불러올 수 없습니다');
+      }
+
+      final selectedMenu = _appConfig!.menus.firstWhere(
+        (menu) => menu.id == menuId,
+        orElse: () => throw Exception('선택한 메뉴를 찾을 수 없습니다'),
+      );
+
+      // 유료 메뉴의 경우 코인 잔액 확인
+      if (!selectedMenu.isFree && _currentUser!.coinBalance < selectedMenu.requiredCoins) {
+        return {
+          'success': false,
+          'error': 'insufficient_coins',
+          'message': '코인이 부족합니다. 필요한 코인: ${selectedMenu.requiredCoins}, 보유 코인: ${_currentUser!.coinBalance}',
+          'requiredCoins': selectedMenu.requiredCoins,
+          'currentCoins': _currentUser!.coinBalance,
+        };
+      }
+
+      _setLoadingState(LoadingState.loading);
+      _clearError();
+      
+      final result = await AuthService.executeTarotReading(
+        _currentUser!.id, 
+        menuId, 
+        cardCount
+      );
+
+      if (result['success'] == true) {
+        // 응답 데이터 검증
+        if (result['reading'] == null || result['historyId'] == null) {
+          throw Exception('서버 응답이 불완전합니다');
+        }
+
+        // 사용자 코인 잔액 업데이트
+        final newBalance = result['userCoinBalance'];
+        if (newBalance != null && newBalance >= 0) {
+          updateUserCoins(newBalance);
+        }
+        
+        _setLoadingState(LoadingState.success);
+        print('타로 리딩 성공: ${result['coinsUsed']}코인 사용, 잔액: ${result['userCoinBalance']}코인');
+        
+        return {
+          'success': true,
+          'reading': result['reading'],
+          'historyId': result['historyId'],
+          'coinsUsed': result['coinsUsed'] ?? 0,
+        };
+      } else {
+        _setLoadingState(LoadingState.error);
+        _errorMessage = result['message'] ?? '타로 리딩 실패';
+        return result; // 코인 부족 등의 오류 정보 포함
+      }
+    } catch (e) {
+      _handleError('타로 리딩 실행 실패', e);
+      throw Exception('타로 리딩 실행 실패: $e');
+    }
+  }
+
   // 사용자 프로필 새로고침
   Future<void> refreshUserProfile() async {
     if (_currentUser == null) return;
@@ -262,6 +377,61 @@ class AppProvider with ChangeNotifier {
   }
 
   // 리소스 정리
+  // 테마 설정 메서드들
+  void setThemeMode(ThemeMode mode) {
+    if (_themeMode != mode) {
+      _themeMode = mode;
+      notifyListeners();
+    }
+  }
+
+  void toggleThemeMode() {
+    switch (_themeMode) {
+      case ThemeMode.light:
+        setThemeMode(ThemeMode.dark);
+        break;
+      case ThemeMode.dark:
+        setThemeMode(ThemeMode.light);
+        break;
+      case ThemeMode.system:
+        setThemeMode(ThemeMode.light);
+        break;
+    }
+  }
+
+  void setHighContrastMode(bool enabled) {
+    if (_isHighContrastMode != enabled) {
+      _isHighContrastMode = enabled;
+      notifyListeners();
+    }
+  }
+
+  void setReduceAnimations(bool enabled) {
+    if (_reduceAnimations != enabled) {
+      _reduceAnimations = enabled;
+      notifyListeners();
+    }
+  }
+
+  // 접근성 설정 자동 감지
+  void updateAccessibilityFromMediaQuery(MediaQueryData mediaQuery) {
+    bool changed = false;
+    
+    if (_isHighContrastMode != mediaQuery.highContrast) {
+      _isHighContrastMode = mediaQuery.highContrast;
+      changed = true;
+    }
+    
+    if (_reduceAnimations != mediaQuery.disableAnimations) {
+      _reduceAnimations = mediaQuery.disableAnimations;
+      changed = true;
+    }
+    
+    if (changed) {
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     ApiService.dispose();

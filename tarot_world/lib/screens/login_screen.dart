@@ -62,8 +62,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       // 서버 연결 확인
-      final isConnected = await AuthService.testConnection();
-      if (!isConnected) {
+      final connectionResult = await AuthService.testConnection();
+      if (connectionResult['success'] != true) {
         throw Exception('서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.');
       }
 

@@ -90,15 +90,23 @@ class V2ApiHandler {
     }
   }
 
-  // 타로 리딩 실행 (핵심 API)
+  // 타로 리딩 실행 (핵심 API) - 트랜잭션 강화
   async executeTarotReading(req, res) {
+    let transactionStarted = false;
+    
     try {
       const { userId, menuId, cardCount = 1 } = req.body;
       
-      // 입력 검증
+      // 입력 검증 강화
       if (!userId || !menuId) {
         return res.status(400).json(
           this.createResponse(false, null, '사용자 ID와 메뉴 ID가 필요합니다', 400)
+        );
+      }
+
+      if (cardCount < 1 || cardCount > 10) {
+        return res.status(400).json(
+          this.createResponse(false, null, '카드 개수는 1-10장 사이여야 합니다', 400)
         );
       }
 
@@ -118,16 +126,26 @@ class V2ApiHandler {
         );
       }
 
-      // 유료 콘텐츠인 경우 코인 확인
+      // 트랜잭션 시작
+      await this.beginTransaction();
+      transactionStarted = true;
+
+      // 유료 콘텐츠인 경우 코인 확인 및 차감
+      let coinsUsed = 0;
       if (!menu.isFree) {
-        if (user.coinBalance < menu.requiredCoins) {
+        // 최신 코인 잔액 확인 (트랜잭션 내에서)
+        const currentUser = await this.findUserByIdForUpdate(userId);
+        
+        if (currentUser.coinBalance < menu.requiredCoins) {
+          await this.rollbackTransaction();
           return res.status(402).json(
             this.createResponse(false, null, '코인이 부족합니다', 402)
           );
         }
         
-        // 코인 차감
-        await this.deductCoins(userId, menu.requiredCoins);
+        // 코인 차감 (트랜잭션 내에서)
+        await this.deductCoinsTransaction(userId, menu.requiredCoins);
+        coinsUsed = menu.requiredCoins;
       }
 
       // 카드 뽑기 실행
@@ -143,39 +161,71 @@ class V2ApiHandler {
         timestamp: new Date().toISOString()
       };
 
-      // 결과 저장
-      const historyId = await this.saveReadingHistory(
+      // 결과 저장 (트랜잭션 내에서)
+      const historyId = await this.saveReadingHistoryTransaction(
         userId, 
         menuId, 
         JSON.stringify(resultData), 
-        menu.requiredCoins
+        coinsUsed
       );
+
+      // 트랜잭션 커밋
+      await this.commitTransaction();
+      transactionStarted = false;
 
       // 업데이트된 사용자 정보 조회
       const updatedUser = await this.findUserById(userId);
 
-      console.log(`[${new Date().toLocaleTimeString()}] 타로 리딩 완료: 사용자 ${userId}, 메뉴 ${menuId}`);
+      console.log(`[${new Date().toLocaleTimeString()}] 타로 리딩 완료: 사용자 ${userId}, 메뉴 ${menuId}, 코인 사용: ${coinsUsed}`);
 
       res.json(this.createResponse(true, {
         reading: resultData,
         historyId: historyId,
         userCoinBalance: updatedUser.coinBalance,
-        coinsUsed: menu.requiredCoins
+        coinsUsed: coinsUsed
       }));
 
     } catch (error) {
+      // 트랜잭션 롤백
+      if (transactionStarted) {
+        try {
+          await this.rollbackTransaction();
+          console.log('타로 리딩 트랜잭션 롤백 완료');
+        } catch (rollbackError) {
+          console.error('트랜잭션 롤백 실패:', rollbackError);
+        }
+      }
+
       console.error('타로 리딩 오류:', error);
+      
+      // 구체적인 오류 메시지 제공
+      let errorMessage = '타로 리딩 처리 중 오류가 발생했습니다';
+      if (error.code === 'SQLITE_CONSTRAINT') {
+        errorMessage = '데이터 무결성 오류가 발생했습니다';
+      } else if (error.code === 'SQLITE_BUSY') {
+        errorMessage = '서버가 일시적으로 바쁩니다. 잠시 후 다시 시도해주세요';
+      }
+
       res.status(500).json(
-        this.createResponse(false, null, '타로 리딩 처리 중 오류가 발생했습니다', 500)
+        this.createResponse(false, null, errorMessage, 500)
       );
     }
   }
 
-  // 광고 시청으로 코인 충전
+  // 광고 시청으로 코인 충전 - 트랜잭션 강화
   async watchAdReward(req, res) {
+    let transactionStarted = false;
+    
     try {
       const { userId } = req.body;
       const rewardCoins = 5; // 광고 1회당 5코인
+
+      // 입력 검증
+      if (!userId) {
+        return res.status(400).json(
+          this.createResponse(false, null, '사용자 ID가 필요합니다', 400)
+        );
+      }
 
       const user = await this.findUserById(userId);
       if (!user) {
@@ -184,13 +234,21 @@ class V2ApiHandler {
         );
       }
 
-      // 코인 충전
-      await this.addCoins(userId, rewardCoins);
+      // 트랜잭션 시작
+      await this.beginTransaction();
+      transactionStarted = true;
+
+      // 코인 충전 (트랜잭션 내에서)
+      await this.addCoinsTransaction(userId, rewardCoins);
       
+      // 트랜잭션 커밋
+      await this.commitTransaction();
+      transactionStarted = false;
+
       // 업데이트된 잔액 조회
       const updatedUser = await this.findUserById(userId);
 
-      console.log(`[${new Date().toLocaleTimeString()}] 광고 시청 보상: 사용자 ${userId}, +${rewardCoins} 코인`);
+      console.log(`[${new Date().toLocaleTimeString()}] 광고 시청 보상: 사용자 ${userId}, +${rewardCoins} 코인, 새 잔액: ${updatedUser.coinBalance}`);
 
       res.json(this.createResponse(true, {
         rewardCoins: rewardCoins,
@@ -198,9 +256,27 @@ class V2ApiHandler {
       }));
 
     } catch (error) {
+      // 트랜잭션 롤백
+      if (transactionStarted) {
+        try {
+          await this.rollbackTransaction();
+          console.log('광고 보상 트랜잭션 롤백 완료');
+        } catch (rollbackError) {
+          console.error('트랜잭션 롤백 실패:', rollbackError);
+        }
+      }
+
       console.error('광고 보상 오류:', error);
+      
+      let errorMessage = '광고 보상 처리 중 오류가 발생했습니다';
+      if (error.code === 'SQLITE_CONSTRAINT') {
+        errorMessage = '데이터 무결성 오류가 발생했습니다';
+      } else if (error.code === 'SQLITE_BUSY') {
+        errorMessage = '서버가 일시적으로 바쁩니다. 잠시 후 다시 시도해주세요';
+      }
+
       res.status(500).json(
-        this.createResponse(false, null, '광고 보상 처리 중 오류가 발생했습니다', 500)
+        this.createResponse(false, null, errorMessage, 500)
       );
     }
   }
@@ -234,14 +310,29 @@ class V2ApiHandler {
     }
   }
 
-  // 코인 관리 (충전/차감)
+  // 코인 관리 (충전/차감) - 트랜잭션 강화
   async manageCoins(req, res) {
+    let transactionStarted = false;
+    
     try {
       const { userId, amount, operation } = req.body; // operation: 'add' or 'deduct'
       
+      // 입력 검증 강화
       if (!userId || !amount || !operation) {
         return res.status(400).json(
           this.createResponse(false, null, '필수 파라미터가 누락되었습니다', 400)
+        );
+      }
+
+      if (typeof amount !== 'number' || amount <= 0) {
+        return res.status(400).json(
+          this.createResponse(false, null, '유효하지 않은 금액입니다', 400)
+        );
+      }
+
+      if (!['add', 'deduct'].includes(operation)) {
+        return res.status(400).json(
+          this.createResponse(false, null, 'operation은 add 또는 deduct여야 합니다', 400)
         );
       }
 
@@ -252,22 +343,31 @@ class V2ApiHandler {
         );
       }
 
+      // 트랜잭션 시작
+      await this.beginTransaction();
+      transactionStarted = true;
+
       if (operation === 'add') {
-        await this.addCoins(userId, amount);
+        await this.addCoinsTransaction(userId, amount);
       } else if (operation === 'deduct') {
-        if (user.coinBalance < amount) {
+        // 트랜잭션 내에서 최신 잔액 확인
+        const currentUser = await this.findUserByIdForUpdate(userId);
+        if (currentUser.coinBalance < amount) {
+          await this.rollbackTransaction();
           return res.status(402).json(
             this.createResponse(false, null, '코인이 부족합니다', 402)
           );
         }
-        await this.deductCoins(userId, amount);
-      } else {
-        return res.status(400).json(
-          this.createResponse(false, null, '잘못된 operation 값입니다', 400)
-        );
+        await this.deductCoinsTransaction(userId, amount);
       }
 
+      // 트랜잭션 커밋
+      await this.commitTransaction();
+      transactionStarted = false;
+
       const updatedUser = await this.findUserById(userId);
+
+      console.log(`[${new Date().toLocaleTimeString()}] 코인 관리 완료: 사용자 ${userId}, ${operation} ${amount}, 새 잔액: ${updatedUser.coinBalance}`);
 
       res.json(this.createResponse(true, {
         operation: operation,
@@ -276,11 +376,158 @@ class V2ApiHandler {
       }));
 
     } catch (error) {
+      // 트랜잭션 롤백
+      if (transactionStarted) {
+        try {
+          await this.rollbackTransaction();
+          console.log('코인 관리 트랜잭션 롤백 완료');
+        } catch (rollbackError) {
+          console.error('트랜잭션 롤백 실패:', rollbackError);
+        }
+      }
+
       console.error('코인 관리 오류:', error);
+      
+      let errorMessage = '코인 관리 중 오류가 발생했습니다';
+      if (error.code === 'SQLITE_CONSTRAINT') {
+        errorMessage = '데이터 무결성 오류가 발생했습니다';
+      } else if (error.code === 'SQLITE_BUSY') {
+        errorMessage = '서버가 일시적으로 바쁩니다. 잠시 후 다시 시도해주세요';
+      }
+
       res.status(500).json(
-        this.createResponse(false, null, '코인 관리 중 오류가 발생했습니다', 500)
+        this.createResponse(false, null, errorMessage, 500)
       );
     }
+  }
+
+  // === 트랜잭션 관리 메서드들 ===
+
+  // 트랜잭션 시작
+  beginTransaction() {
+    return new Promise((resolve, reject) => {
+      this.db.run("BEGIN TRANSACTION", (err) => {
+        if (err) {
+          console.error('트랜잭션 시작 실패:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  // 트랜잭션 커밋
+  commitTransaction() {
+    return new Promise((resolve, reject) => {
+      this.db.run("COMMIT", (err) => {
+        if (err) {
+          console.error('트랜잭션 커밋 실패:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  // 트랜잭션 롤백
+  rollbackTransaction() {
+    return new Promise((resolve, reject) => {
+      this.db.run("ROLLBACK", (err) => {
+        if (err) {
+          console.error('트랜잭션 롤백 실패:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  // SELECT FOR UPDATE를 이용한 사용자 조회 (락 설정)
+  findUserByIdForUpdate(userId) {
+    return new Promise((resolve, reject) => {
+      // SQLite는 SELECT FOR UPDATE를 직접 지원하지 않으므로 
+      // 트랜잭션 내에서 조회하여 동시성 제어
+      this.db.get(
+        "SELECT * FROM User WHERE id = ?",
+        [userId],
+        (err, row) => {
+          if (err) {
+            console.error('사용자 조회 실패 (FOR UPDATE):', err);
+            reject(err);
+          } else if (!row) {
+            reject(new Error('사용자를 찾을 수 없습니다'));
+          } else {
+            resolve(row);
+          }
+        }
+      );
+    });
+  }
+
+  // 트랜잭션 내에서 코인 차감
+  deductCoinsTransaction(userId, amount) {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        UPDATE User 
+        SET coinBalance = coinBalance - ?, updatedAt = CURRENT_TIMESTAMP 
+        WHERE id = ? AND coinBalance >= ?
+      `;
+      this.db.run(sql, [amount, userId, amount], function(err) {
+        if (err) {
+          console.error('코인 차감 실패 (트랜잭션):', err);
+          reject(err);
+        } else if (this.changes === 0) {
+          reject(new Error('코인 차감 실패: 잔액 부족 또는 사용자 없음'));
+        } else {
+          console.log(`코인 차감 성공: 사용자 ${userId}, 차감 금액 ${amount}`);
+          resolve();
+        }
+      });
+    });
+  }
+
+  // 트랜잭션 내에서 코인 추가
+  addCoinsTransaction(userId, amount) {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        UPDATE User 
+        SET coinBalance = coinBalance + ?, updatedAt = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `;
+      this.db.run(sql, [amount, userId], function(err) {
+        if (err) {
+          console.error('코인 추가 실패 (트랜잭션):', err);
+          reject(err);
+        } else if (this.changes === 0) {
+          reject(new Error('코인 추가 실패: 사용자 없음'));
+        } else {
+          console.log(`코인 추가 성공: 사용자 ${userId}, 추가 금액 ${amount}`);
+          resolve();
+        }
+      });
+    });
+  }
+
+  // 트랜잭션 내에서 리딩 히스토리 저장
+  saveReadingHistoryTransaction(userId, menuId, resultData, coinsUsed) {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        INSERT INTO ReadingHistory (userId, menuId, resultData, coinsUsed, createdAt)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `;
+      this.db.run(sql, [userId, menuId, resultData, coinsUsed], function(err) {
+        if (err) {
+          console.error('리딩 히스토리 저장 실패 (트랜잭션):', err);
+          reject(err);
+        } else {
+          console.log(`리딩 히스토리 저장 성공: ID ${this.lastID}`);
+          resolve(this.lastID);
+        }
+      });
+    });
   }
 
   // === 데이터베이스 헬퍼 메서드들 ===

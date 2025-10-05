@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_provider.dart';
+import 'themes/app_theme.dart';
 import 'screens/login_screen.dart';
 
 void main() {
@@ -14,46 +15,41 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<AppProvider>(
       create: (context) => AppProvider(),
-      child: MaterialApp(
-        title: 'Tarot Constellation',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.deepPurple,
-          fontFamily: 'NotoSans',
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.deepPurple,
-            brightness: Brightness.dark,
-          ),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            iconTheme: IconThemeData(color: Colors.white),
-            titleTextStyle: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
-              foregroundColor: Colors.white,
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          cardTheme: CardTheme(
-            color: Colors.white.withOpacity(0.1),
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        home: const LoginScreen(),
+      child: Consumer<AppProvider>(
+        builder: (context, appProvider, child) {
+          // 접근성 설정 자동 감지
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final mediaQuery = MediaQuery.of(context);
+            appProvider.updateAccessibilityFromMediaQuery(mediaQuery);
+          });
+
+          return MaterialApp(
+            title: 'Tarot Constellation',
+            debugShowCheckedModeBanner: false,
+            
+            // 테마 설정
+            theme: appProvider.isHighContrastMode 
+                ? AppTheme.highContrastTheme 
+                : AppTheme.lightTheme,
+            darkTheme: appProvider.isHighContrastMode 
+                ? AppTheme.highContrastTheme 
+                : AppTheme.darkTheme,
+            themeMode: appProvider.themeMode,
+            
+            // 접근성 설정
+            builder: (context, child) {
+              final mediaQuery = MediaQuery.of(context);
+              return MediaQuery(
+                data: mediaQuery.copyWith(
+                  disableAnimations: appProvider.reduceAnimations,
+                ),
+                child: child!,
+              );
+            },
+            
+            home: const LoginScreen(),
+          );
+        },
       ),
     );
   }

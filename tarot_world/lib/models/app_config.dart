@@ -135,38 +135,41 @@ class ToolbarItem {
 
 // 메뉴 아이템 정보 (V2.0 확장됨)
 class MenuItem {
+  final int id;
   final String title;
   final String category;
   final String uiType;
   final String? keyword;
   final String? description;
   final int position;
-  final bool? isFree;
-  final int? requiredCoins;
+  final bool isFree;
+  final int requiredCoins;
   final String? spreadType;
 
   MenuItem({
+    required this.id,
     required this.title,
     required this.category,
     required this.uiType,
     this.keyword,
     this.description,
     required this.position,
-    this.isFree,
-    this.requiredCoins,
+    required this.isFree,
+    required this.requiredCoins,
     this.spreadType,
   });
 
   factory MenuItem.fromJson(Map<String, dynamic> json) {
     return MenuItem(
-      title: json['title'],
-      category: json['category'],
-      uiType: json['uiType'],
+      id: json['id'] ?? 0,
+      title: json['title'] ?? '',
+      category: json['category'] ?? '',
+      uiType: json['uiType'] ?? '',
       keyword: json['keyword'],
       description: json['description'],
-      position: json['position'],
-      isFree: json['isFree'],
-      requiredCoins: json['requiredCoins'],
+      position: json['position'] ?? 0,
+      isFree: json['isFree'] ?? true,
+      requiredCoins: json['requiredCoins'] ?? 0,
       spreadType: json['spreadType'],
     );
   }

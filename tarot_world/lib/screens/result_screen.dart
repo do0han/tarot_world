@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/app_config.dart';
 import '../providers/app_provider.dart';
+import '../widgets/card_reveal_animation.dart';
+import '../widgets/card_interpretation_widget.dart';
 
 class ResultScreen extends StatefulWidget {
   final List<TarotCard> cards;
@@ -133,21 +135,23 @@ class _ResultScreenState extends State<ResultScreen>
 
             // 메인 카드 영역
             Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentCardIndex = index;
-                  });
-                  // 페이지 변경 시 페이드 효과
-                  _fadeController.reset();
-                  _fadeController.forward();
-                },
-                itemCount: widget.cards.length,
-                itemBuilder: (context, index) {
-                  return _buildCardResult(widget.cards[index], index);
-                },
-              ),
+              child: widget.cards.length == 3
+                  ? _buildThreeCardLayout()
+                  : PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentCardIndex = index;
+                        });
+                        // 페이지 변경 시 페이드 효과
+                        _fadeController.reset();
+                        _fadeController.forward();
+                      },
+                      itemCount: widget.cards.length,
+                      itemBuilder: (context, index) {
+                        return _buildCardResult(widget.cards[index], index);
+                      },
+                    ),
             ),
 
             // 하단 네비게이션
@@ -240,136 +244,29 @@ class _ResultScreenState extends State<ResultScreen>
   }
 
   Widget _buildCardResult(TarotCard card, int index) {
-    return FadeTransition(
-      opacity: _fadeController,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // 카드 위치 라벨
-            Text(
-              _cardLabels[index],
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // 카드 이미지
-            _buildCardImage(card),
-
-            const SizedBox(height: 30),
-
-            // 카드 정보
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 키워드
-                  const Row(
-                    children: [
-                      Icon(
-                        Icons.label,
-                        color: Colors.amber,
-                        size: 20,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        '키워드',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    card.keywords,
-                    style: const TextStyle(
-                      color: Colors.amber,
-                      fontSize: 16,
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // 의미
-                  const Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        '의미',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    card.getCurrentDescription(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      height: 1.6,
-                    ),
-                  ),
-
-                  // 3장 뽑기일 때 특별 메시지
-                  if (widget.cards.length == 3) ...[
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF9966CC).withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${_cardLabels[index]} 시점의 조언',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _getAdviceForPosition(index),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
+    final appProvider = Provider.of<AppProvider>(context);
+    final selectedStyle = appProvider.selectedCardStyle;
+    
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // 향상된 카드 애니메이션
+          CardRevealAnimation(
+            card: card,
+            cardLabel: _cardLabels[index],
+            isActive: true,
+            selectedStyle: selectedStyle,
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // 향상된 해석 위젯
+          CardInterpretationWidget(
+            card: card,
+            cardLabel: _cardLabels[index],
+            keyword: widget.keyword,
+          ),
+        ],
       ),
     );
   }
@@ -545,6 +442,284 @@ class _ResultScreenState extends State<ResultScreen>
       default:
         return '기본';
     }
+  }
+
+  Widget _buildThreeCardLayout() {
+    final appProvider = Provider.of<AppProvider>(context);
+    final selectedStyle = appProvider.selectedCardStyle;
+    
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // 3장 카드 미리보기
+          SizedBox(
+            height: 250,
+            child: PageView.builder(
+              controller: PageController(viewportFraction: 0.7),
+              onPageChanged: (index) {
+                setState(() {
+                  _currentCardIndex = index;
+                });
+                _fadeController.reset();
+                _fadeController.forward();
+              },
+              itemCount: widget.cards.length,
+              itemBuilder: (context, index) {
+                final isActive = _currentCardIndex == index;
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  child: CardRevealAnimation(
+                    card: widget.cards[index],
+                    cardLabel: _cardLabels[index],
+                    isActive: isActive,
+                    selectedStyle: selectedStyle,
+                    onTap: () {
+                      setState(() {
+                        _currentCardIndex = index;
+                      });
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // 선택된 카드의 상세 해석
+          FadeTransition(
+            opacity: _fadeController,
+            child: CardInterpretationWidget(
+              card: widget.cards[_currentCardIndex],
+              cardLabel: _cardLabels[_currentCardIndex],
+              keyword: widget.keyword,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniCard(TarotCard card, int index, String label, {bool isCenter = false}) {
+    final isSelected = _currentCardIndex == index;
+    final scale = isCenter ? 1.1 : 1.0;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentCardIndex = index;
+        });
+        _fadeController.reset();
+        _fadeController.forward();
+      },
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.amber : Colors.white70,
+              fontSize: 14,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          const SizedBox(height: 8),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            transform: Matrix4.identity()..scale(scale),
+            child: Container(
+              width: isCenter ? 90 : 80,
+              height: isCenter ? 130 : 120,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: isSelected 
+                    ? Border.all(color: Colors.amber, width: 3)
+                    : Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: isSelected 
+                        ? Colors.amber.withOpacity(0.4)
+                        : Colors.black.withOpacity(0.3),
+                    blurRadius: isSelected ? 15 : 5,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // 배경 그라데이션
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            _getStyleColor(Provider.of<AppProvider>(context, listen: false).selectedCardStyle).withOpacity(0.9),
+                            _getStyleColor(Provider.of<AppProvider>(context, listen: false).selectedCardStyle).withOpacity(0.7),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    // 카드 내용
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _getCardIcon(card.nameEn),
+                            size: isCenter ? 32 : 28,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            card.nameKo,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: isCenter ? 10 : 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (card.isReversed) ...[
+                            const SizedBox(height: 2),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'R',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 6,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectedCardDetail() {
+    final selectedCard = widget.cards[_currentCardIndex];
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 카드 제목
+          Row(
+            children: [
+              Icon(
+                Icons.star,
+                color: Colors.amber,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${_cardLabels[_currentCardIndex]} - ${selectedCard.nameKo}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // 키워드
+          Row(
+            children: [
+              Icon(
+                Icons.label,
+                color: Colors.amber,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '키워드: ${selectedCard.keywords}',
+                style: const TextStyle(
+                  color: Colors.amber,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // 의미
+          Text(
+            selectedCard.getCurrentDescription(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              height: 1.5,
+            ),
+          ),
+          
+          // 3장 뽑기 조언
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF9966CC).withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${_cardLabels[_currentCardIndex]} 시점의 조언',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _getAdviceForPosition(_currentCardIndex),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   IconData _getCardIcon(String cardName) {
