@@ -103,9 +103,9 @@ class _TarotReadingScreenState extends State<TarotReadingScreen>
       final result = await appProvider.executePaidTarotReading(menuId, _cardCount);
       
       if (result['success'] == true) {
-        // 성공: 결과 데이터를 DrawCardsResponse 형태로 변환
-        final readingData = result['reading'];
-        final cards = (readingData['cards'] as List)
+        // 성공: V2.1 API 응답 구조에 맞게 결과 데이터 추출
+        final responseData = result['data'] ?? result; // V2.1에서는 data 객체 안에 있음
+        final cards = (responseData['cards'] as List)
             .map((cardData) => TarotCard.fromJson(cardData))
             .toList();
         
@@ -156,13 +156,13 @@ class _TarotReadingScreenState extends State<TarotReadingScreen>
   int _getMenuIdFromKeyword(String? keyword) {
     switch (keyword) {
       case 'love':
-        return 2; // 애정운
+        return 11; // 이 사람, 내 운명일까? (soulmate)
       case 'money':
-        return 3; // 재물운
+        return 18; // 투자 성공 가능성 (investment)
       case 'work':
-        return 4; // 직업/학업운
+        return 23; // 나에게 맞는 진로 (career_path)
       default:
-        return 1; // 오늘의 운세
+        return 5; // 오늘의 운세 (daily)
     }
   }
 

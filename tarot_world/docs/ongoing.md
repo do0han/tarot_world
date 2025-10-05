@@ -1,0 +1,464 @@
+# V2.1 구현 계획 - 프리미엄 수익화 모델
+
+## 📊 현재 진행 상황 (2024.10.05 업데이트)
+
+### ✅ **Phase 2 완료 상태** 
+**🎯 V2.0 Android 구현 완성: 풀스택 수익화 앱 완전 실현**
+
+#### **Phase 2.1: 로딩 애니메이션 및 상태 표시 개선** ✅
+- LoadingWidget 4가지 애니메이션 타입 구현 (tarotCards, mystical, payment, standard)
+- 복합 애니메이션 (rotation, scaling, fade, particle effects)
+- 전체 화면 로딩 상태 최적화
+
+#### **Phase 2.2: 카드 셔플 애니메이션 구현** ✅
+- CardShuffleAnimation 위젯 (파티클 효과 + 글로우)
+- 다층 카드 애니메이션 + 순차적 타이밍
+- 완료 콜백 시스템 구현
+
+#### **Phase 2.3: 결과 화면 UX 개선** ✅
+- CardRevealAnimation (히어로 애니메이션 + 상호작용 글로우)
+- CardInterpretationWidget (컨텍스트 기반 해석)
+- PageView 3카드 레이아웃 최적화
+
+#### **Phase 2.4: 코인 부족 시 사용자 안내 강화** ✅
+- CoinInsufficientDialog (다중 해결 옵션)
+- PaymentSuccessDialog (스파클 애니메이션 + 추적)
+- 자동 재시작 기능 구현
+
+#### **Phase 2.5: 접근성 및 다크모드 대응** ✅
+- 완전한 테마 시스템 (light/dark/high-contrast)
+- AccessibilityUtils (햅틱 피드백 + 시맨틱 헬퍼)
+- AppProvider 테마 관리 메서드
+- Consumer 기반 반응형 UI
+
+#### **Phase 2.6: 설정 화면 테마 컨트롤 추가** ✅
+- 3개 섹션 (테마 설정, 접근성 설정, 카드 스타일)
+- 실시간 테마 전환 UI
+- 테마 인식 컬러 시스템 완성
+
+---
+
+## 🚀 **Phase 3: V2.1 프리미엄 수익화 모델 구현 계획**
+
+### **핵심 전략: "무료 체험 → 프리미엄 전환" 수익 모델**
+
+현재 완성된 기반 구조를 활용하여 수익화 기능을 추가하고, 사용자에게 더 깊이 있는 타로 경험을 제공합니다.
+
+---
+
+### **Phase 3.1: 백엔드 수익화 인프라 구축** 🔄
+
+**1. 데이터베이스 스키마 확장:**
+```sql
+-- 사용자 관리 테이블
+CREATE TABLE Users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100),
+    coinBalance INTEGER DEFAULT 10, -- 신규 사용자 10코인 지급
+    isPremium BOOLEAN DEFAULT FALSE,
+    premiumExpiresAt DATETIME,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    lastLoginAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 리딩 히스토리 테이블
+CREATE TABLE ReadingHistory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER,
+    menuId INTEGER,
+    questionType VARCHAR(50), -- 'love', 'money', 'career', 'daily'
+    cardData TEXT, -- JSON으로 카드 정보 저장
+    interpretation TEXT, -- 해석 내용
+    detailedInterpretation TEXT, -- 프리미엄 상세 해석
+    coinsUsed INTEGER DEFAULT 0,
+    spreadType VARCHAR(20) DEFAULT 'single', -- 'single', 'three_card', 'celtic_cross'
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (userId) REFERENCES Users(id)
+);
+
+-- 코인 트랜잭션 테이블
+CREATE TABLE CoinTransactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER,
+    amount INTEGER, -- 양수: 충전, 음수: 소모
+    type VARCHAR(20), -- 'purchase', 'ad_reward', 'daily_bonus', 'reading_cost'
+    description TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (userId) REFERENCES Users(id)
+);
+
+-- 메뉴 확장 (코인 시스템)
+ALTER TABLE AppMenu ADD COLUMN isFree BOOLEAN DEFAULT TRUE;
+ALTER TABLE AppMenu ADD COLUMN requiredCoins INTEGER DEFAULT 0;
+ALTER TABLE AppMenu ADD COLUMN description TEXT;
+ALTER TABLE AppMenu ADD COLUMN spreadType VARCHAR(20) DEFAULT 'single';
+ALTER TABLE AppMenu ADD COLUMN premiumOnly BOOLEAN DEFAULT FALSE;
+```
+
+**2. 신규 API 엔드포인트:**
+- `POST /auth/login` - 간단한 사용자 로그인/등록
+- `POST /auth/guest-login` - 게스트 계정 생성
+- `POST /tarot/execute-reading` - 코인 차감 + 타로 리딩 실행
+- `POST /coins/watch-ad` - 광고 시청 보상 (5코인)
+- `POST /coins/daily-bonus` - 일일 출석 보상
+- `GET /history/readings` - 나의 타로 히스토리
+- `GET /user/profile` - 사용자 프로필 정보
+- `POST /premium/subscribe` - 프리미엄 구독
+- `GET /coins/transactions` - 코인 사용 내역
+
+---
+
+### **Phase 3.2: Flutter 프리미엄 기능 구현** 🔄
+
+**1. 새로운 화면 구조:**
+```
+📱 앱 구조 확장
+├── 🆕 LoginScreen (간단한 로그인/게스트 로그인)
+├── 🔄 MainScreen (코인 잔액 + 프리미엄 상태 표시)
+├── 🆕 CoinShopScreen (광고 시청 + 인앱 결제)
+├── 🆕 PremiumScreen (프리미엄 혜택 안내)
+├── 🆕 ReadingHistoryScreen (나의 타로 기록)
+├── 🆕 ProfileScreen (내 정보 관리)
+└── 🔄 TarotReadingScreen (코인 차감 로직 추가)
+```
+
+**2. 코인 시스템 UI 컴포넌트:**
+```dart
+// 상단 코인 잔액 위젯
+class CoinBalanceWidget extends StatelessWidget {
+  final int balance;
+  final VoidCallback onTap;
+  
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.monetization_on, color: Colors.white, size: 18),
+          SizedBox(width: 4),
+          Text('$balance', style: TextStyle(
+            color: Colors.white, 
+            fontWeight: FontWeight.bold
+          )),
+        ],
+      ),
+    );
+  }
+}
+
+// 코인 부족 다이얼로그 (이미 구현됨 - Phase 2.4에서 완성)
+// 코인 결제 성공 다이얼로그 (이미 구현됨 - Phase 2.4에서 완성)
+```
+
+**3. 프리미엄 메뉴 확장:**
+```dart
+// 새로운 프리미엄 메뉴 데이터 구조
+final premiumMenus = [
+  {
+    'id': 1,
+    'title': '오늘의 타로 메시지',
+    'description': '하루의 시작을 위한 간단한 안내',
+    'coins': 0,
+    'isFree': true,
+    'spreadType': 'single',
+    'category': 'daily'
+  },
+  {
+    'id': 2,
+    'title': '연인과의 미래 전망',
+    'description': '사랑하는 사람과의 관계 발전 방향',
+    'coins': 5,
+    'isFree': false,
+    'spreadType': 'three_card',
+    'category': 'love'
+  },
+  {
+    'id': 3,
+    'title': '직장에서의 성공 가능성',
+    'description': '커리어 발전과 성취에 대한 조언',
+    'coins': 3,
+    'isFree': false,
+    'spreadType': 'three_card',
+    'category': 'career'
+  },
+  {
+    'id': 4,
+    'title': '금전운 상승 방법',
+    'description': '재정 상황 개선과 투자 타이밍',
+    'coins': 5,
+    'isFree': false,
+    'spreadType': 'three_card',
+    'category': 'money'
+  },
+  {
+    'id': 5,
+    'title': '내 영혼의 깊은 메시지',
+    'description': '인생의 방향과 내면의 목소리',
+    'coins': 10,
+    'isFree': false,
+    'spreadType': 'celtic_cross',
+    'category': 'spiritual',
+    'premiumOnly': true
+  },
+];
+```
+
+---
+
+### **Phase 3.3: 고급 타로 기능 구현** 📅
+
+**1. 타로 스프레드 다양화:**
+- **1장 스프레드**: 오늘의 메시지 (무료)
+- **3장 스프레드**: 과거-현재-미래 (3-5코인)
+- **5장 스프레드**: 상황 분석 (7코인)
+- **7장 스프레드**: 켈틱 크로스 (10코인)
+
+**2. AI 기반 해석 시스템:**
+```javascript
+// 서버 사이드 해석 로직
+function generateDetailedReading(cards, spreadType, questionType, isPremium) {
+  const baseReading = {
+    summary: generateSummary(cards, questionType),
+    cardInterpretations: cards.map(card => ({
+      position: card.position,
+      card: card,
+      basicMeaning: card.isReversed ? card.reversedMeaning : card.uprightMeaning,
+    }))
+  };
+
+  if (isPremium) {
+    return {
+      ...baseReading,
+      detailedInterpretation: generateDetailedInterpretation(cards, questionType),
+      personalizedAdvice: generatePersonalizedAdvice(cards, questionType),
+      combinedMessage: analyzeCombination(cards),
+      actionPlan: generateActionPlan(cards, questionType),
+      timeline: generateTimeline(cards, spreadType)
+    };
+  }
+
+  return baseReading;
+}
+```
+
+**3. 프리미엄 기능 차별화:**
+- **기본 해석**: 카드별 기본 의미 + 간단한 요약
+- **프리미엄 해석**: 상세 분석 + 개인화 조언 + 실행 계획
+- **히스토리**: 무료 사용자 최근 5개 vs 프리미엄 무제한
+- **푸시 알림**: 프리미엄 사용자만 매일 운세 알림
+
+---
+
+### **Phase 3.4: 수익화 최적화** 📅
+
+**1. 프리미엄 구독 모델:**
+```dart
+final subscriptionPlans = [
+  {
+    'id': 'monthly',
+    'name': '월간 프리미엄',
+    'price': '₩4,900',
+    'duration': '1개월',
+    'benefits': [
+      '무제한 타로 리딩',
+      '상세 해석 및 조언',
+      '히스토리 무제한 보관',
+      '매일 운세 푸시 알림',
+      '광고 제거'
+    ]
+  },
+  {
+    'id': 'yearly',
+    'name': '연간 프리미엄',
+    'price': '₩49,000',
+    'originalPrice': '₩58,800',
+    'discount': '17% 할인',
+    'duration': '12개월',
+    'benefits': [
+      '월간 프리미엄 모든 혜택',
+      '연간 결제 할인',
+      '독점 타로 스프레드 이용'
+    ]
+  }
+];
+```
+
+**2. 광고 시스템:**
+- **보상형 광고**: 시청 시 5코인 지급 (1일 5회 제한)
+- **배너 광고**: 무료 사용자 대상 하단 배너
+- **전면 광고**: 무료 리딩 완료 후 선택적 표시
+
+**3. 인앱 결제 코인 패키지:**
+```dart
+final coinPackages = [
+  {
+    'id': 'coins_50',
+    'coins': 50,
+    'price': '₩1,900',
+    'bonus': 0,
+    'value': '기본 패키지'
+  },
+  {
+    'id': 'coins_100',
+    'coins': 100,
+    'price': '₩3,500',
+    'bonus': 10,
+    'value': '10코인 보너스!'
+  },
+  {
+    'id': 'coins_300',
+    'coins': 300,
+    'price': '₩9,900',
+    'bonus': 50,
+    'value': '50코인 보너스!'
+  },
+  {
+    'id': 'coins_500',
+    'coins': 500,
+    'price': '₩15,900',
+    'bonus': 100,
+    'value': '100코인 보너스!'
+  }
+];
+```
+
+---
+
+### **Phase 3.5: 사용자 유지 및 성장** 📅
+
+**1. 게이미피케이션 시스템:**
+```dart
+class UserEngagement {
+  // 일일 출석 보상
+  static const dailyRewards = [
+    {'day': 1, 'coins': 2},
+    {'day': 2, 'coins': 3},
+    {'day': 3, 'coins': 5},
+    {'day': 7, 'coins': 10}, // 주간 보너스
+    {'day': 30, 'coins': 50}, // 월간 보너스
+  ];
+
+  // 업적 시스템
+  static const achievements = [
+    {
+      'id': 'first_reading',
+      'name': '첫 타로 리딩',
+      'description': '첫 번째 타로 리딩 완료',
+      'reward': 5,
+      'icon': Icons.star
+    },
+    {
+      'id': 'week_streak',
+      'name': '일주일 연속 이용',
+      'description': '7일 연속 앱 이용',
+      'reward': 15,
+      'icon': Icons.whatshot
+    },
+    // ... 더 많은 업적들
+  ];
+}
+```
+
+**2. 소셜 기능:**
+- **리딩 결과 공유**: 이미지로 변환하여 SNS 공유
+- **친구 초대 시스템**: 초대 코드로 양쪽 모두 20코인 지급
+- **앱스토어 리뷰 보상**: 리뷰 작성 시 10코인 지급
+
+**3. 푸시 알림 전략:**
+- **매일 운세**: 아침 9시 개인화된 운세 (프리미엄 전용)
+- **코인 충전 알림**: 코인 0개 시 24시간 후 알림
+- **특별 이벤트**: 더블 코인 이벤트, 할인 알림
+
+---
+
+## 📈 **예상 수익 구조**
+
+### **사용자 세그먼트 분석:**
+
+1. **무료 사용자 (85%)**
+   - 일일 무료 리딩 1회
+   - 광고 시청으로 추가 코인 획득
+   - 기본적인 해석만 제공
+   - 광고 수익 기여
+
+2. **코인 구매 사용자 (12%)**
+   - 필요할 때마다 코인 구매
+   - 프리미엄 리딩 간헐적 이용
+   - 평균 월 ₩5,000 결제
+
+3. **프리미엄 구독 사용자 (3%)**
+   - 무제한 리딩 + 모든 기능
+   - 상세 해석 + 개인화 조언
+   - 월 ₩4,900 정기 결제
+
+### **수익 예측 (MAU 10,000 기준):**
+- 무료 사용자 광고 수익: ₩850,000/월
+- 코인 구매 수익: ₩6,000,000/월
+- 프리미엄 구독 수익: ₩1,470,000/월
+- **총 예상 수익: ₩8,320,000/월**
+
+---
+
+## 🎯 **구현 타임라인**
+
+### **Week 1: 기반 인프라 (Phase 3.1)**
+- [x] Phase 2 완료 (2024.10.05)
+- [ ] 데이터베이스 스키마 설계 및 구현
+- [ ] 사용자 인증 API 개발
+- [ ] 코인 시스템 API 개발
+
+### **Week 2: 사용자 기능 (Phase 3.2)**
+- [ ] 로그인/등록 화면 구현
+- [ ] 코인 잔액 UI 추가
+- [ ] 코인 상점 화면 구현
+- [ ] 기본 프리미엄 기능 구현
+
+### **Week 3: 고급 기능 (Phase 3.3)**
+- [ ] 다양한 타로 스프레드 구현
+- [ ] 상세 해석 시스템 개발
+- [ ] 히스토리 기능 구현
+- [ ] 프리미엄 차별화 완성
+
+### **Week 4: 수익화 완성 (Phase 3.4-3.5)**
+- [ ] 인앱 결제 시스템 구현
+- [ ] 광고 시스템 통합
+- [ ] 게이미피케이션 기능
+- [ ] 푸시 알림 시스템
+
+### **Week 5: 테스트 및 최적화**
+- [ ] 통합 테스트
+- [ ] 성능 최적화
+- [ ] 사용자 피드백 반영
+- [ ] 앱스토어 배포 준비
+
+---
+
+## 🚀 **현재 진행 상황**
+
+**✅ 완료됨:**
+- Phase 2 전체 완성 (사용자 경험 혁신)
+- 테마 시스템 및 접근성 완전 지원
+- 애니메이션 시스템 완성
+- 코인 부족 안내 시스템 (Phase 2.4에서 구현)
+
+**🔄 진행 중:**
+- V2.1 구현 계획 수립 완료
+- Phase 3.1 데이터베이스 설계 준비
+
+**📅 다음 단계:**
+- 사용자 인증 시스템 구현
+- 백엔드 코인 관리 API 개발
+- Flutter 로그인 화면 구현
+
+---
+
+**💡 V2.1은 현재 완성된 V2.0 기반 위에 수익화 모델을 체계적으로 구축하여, 지속가능한 비즈니스 모델을 갖춘 프리미엄 타로 서비스로 발전시키는 것이 목표입니다.**

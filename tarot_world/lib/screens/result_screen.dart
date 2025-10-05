@@ -164,10 +164,12 @@ class _ResultScreenState extends State<ResultScreen>
                     IconButton(
                       onPressed: _currentCardIndex > 0
                           ? () {
-                              _pageController.previousPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
+                              if (_pageController.hasClients) {
+                                _pageController.previousPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
                             }
                           : null,
                       icon: Icon(
@@ -188,10 +190,12 @@ class _ResultScreenState extends State<ResultScreen>
                     IconButton(
                       onPressed: _currentCardIndex < widget.cards.length - 1
                           ? () {
-                              _pageController.nextPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
+                              if (_pageController.hasClients) {
+                                _pageController.nextPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
                             }
                           : null,
                       icon: Icon(
@@ -216,11 +220,13 @@ class _ResultScreenState extends State<ResultScreen>
 
     return GestureDetector(
       onTap: () {
-        _pageController.animateToPage(
-          index,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
+        if (_pageController.hasClients) {
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8),

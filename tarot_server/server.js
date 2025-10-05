@@ -1,11 +1,22 @@
-// server.js - Tarot Constellation V2.0 백엔드
+// server.js - Tarot Constellation V2.1 백엔드
 const express = require('express');
 const V2ApiHandler = require('./v2_apis');
+const V21ApiHandler = require('./v2_1_apis');
 const app = express();
 const port = 3000;
 
 // JSON 파싱 미들웨어 추가
 app.use(express.json());
+
+// 모든 요청 로깅 미들웨어
+app.use((req, res, next) => {
+  const timestamp = new Date().toLocaleTimeString('ko-KR');
+  console.log(`[${timestamp}] ${req.method} ${req.url} - ${req.ip}`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log(`[${timestamp}] 요청 바디:`, req.body);
+  }
+  next();
+});
 
 // CORS(Cross-Origin Resource Sharing) 헤더 추가 (Flutter 웹 지원)
 app.use((req, res, next) => {
@@ -23,8 +34,9 @@ app.use((req, res, next) => {
     next();
 });
 
-// V2 API 핸들러 인스턴스
+// API 핸들러 인스턴스
 const v2Api = new V2ApiHandler();
+const v21Api = new V21ApiHandler();
 
 // ===== 데이터베이스 스키마 시뮬레이션 =====
 
@@ -283,17 +295,61 @@ app.put('/user/coins', (req, res) => {
   v2Api.manageCoins(req, res);
 });
 
+// ===== V2.1 프리미엄 수익화 API 엔드포인트 =====
+
+// 광고 시청 보상 (V2.1 향상)
+app.post('/coins/watch-ad', (req, res) => {
+  v21Api.watchAdReward(req, res);
+});
+
+// 일일 출석 보상
+app.post('/coins/daily-bonus', (req, res) => {
+  v21Api.dailyBonus(req, res);
+});
+
+// 타로 리딩 실행 (코인 차감 포함)
+app.post('/tarot/execute-reading', (req, res) => {
+  v21Api.executeReading(req, res);
+});
+
+// 프리미엄 구독
+app.post('/premium/subscribe', (req, res) => {
+  v21Api.subscribePremium(req, res);
+});
+
+// 리딩 히스토리 조회 (V2.1 향상)
+app.get('/history/readings/:userId', (req, res) => {
+  v21Api.getReadingHistory(req, res);
+});
+
+// 코인 트랜잭션 내역 조회
+app.get('/coins/transactions/:userId', (req, res) => {
+  // 추후 구현 예정
+  res.json({
+    success: true,
+    message: '코인 트랜잭션 내역 조회 API 준비 중',
+    data: []
+  });
+});
+
 app.listen(port, () => {
-  console.log(`🚀 Tarot Constellation V2.0 서버가 http://localhost:${port} 에서 실행 중입니다.`);
-  console.log(`\n📡 V1.0 API 엔드포인트:`);
+  console.log(`🚀 Tarot Constellation V2.1 서버가 http://localhost:${port} 에서 실행 중입니다.`);
+  console.log(`\n📡 V1.0 Legacy API:`);
   console.log(`- GET /app-config : 앱 설정 및 메뉴 데이터`);
   console.log(`- GET /tarot-cards : 전체 타로 카드 데이터`);
   console.log(`- GET /draw-cards?count=3&style=vintage : 랜덤 카드 뽑기`);
-  console.log(`\n🆕 V2.0 API 엔드포인트:`);
+  console.log(`\n🆕 V2.0 Authentication API:`);
   console.log(`- POST /auth/login : 사용자 로그인`);
   console.log(`- GET /user/profile/:userId : 사용자 프로필 조회`);
   console.log(`- POST /tarot/read : 타로 리딩 실행`);
   console.log(`- POST /user/watch-ad : 광고 시청 보상`);
   console.log(`- GET /user/history/:userId : 리딩 히스토리 조회`);
   console.log(`- PUT /user/coins : 코인 관리`);
+  console.log(`\n💎 V2.1 Premium API:`);
+  console.log(`- POST /coins/watch-ad : 광고 시청 보상 (향상)`);
+  console.log(`- POST /coins/daily-bonus : 일일 출석 보상`);
+  console.log(`- POST /tarot/execute-reading : 타로 리딩 실행 (코인 차감)`);
+  console.log(`- POST /premium/subscribe : 프리미엄 구독`);
+  console.log(`- GET /history/readings/:userId : 리딩 히스토리 (향상)`);
+  console.log(`- GET /coins/transactions/:userId : 코인 트랜잭션 내역`);
 });

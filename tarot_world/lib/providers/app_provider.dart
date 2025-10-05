@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../models/app_config.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
@@ -211,6 +213,8 @@ class AppProvider with ChangeNotifier {
     }
 
     try {
+      print('executePaidTarotReading 시작: menuId=$menuId, cardCount=$cardCount, userId=${_currentUser!.id}');
+      
       // 입력 유효성 검사
       if (menuId <= 0) {
         throw Exception('유효하지 않은 메뉴가 선택되었습니다');
@@ -220,61 +224,69 @@ class AppProvider with ChangeNotifier {
         throw Exception('카드 개수는 1장에서 10장 사이여야 합니다');
       }
 
-      // 메뉴 정보 확인
-      if (_appConfig?.menus == null) {
-        throw Exception('메뉴 정보를 불러올 수 없습니다');
-      }
-
-      final selectedMenu = _appConfig!.menus.firstWhere(
-        (menu) => menu.id == menuId,
-        orElse: () => throw Exception('선택한 메뉴를 찾을 수 없습니다'),
-      );
-
-      // 유료 메뉴의 경우 코인 잔액 확인
-      if (!selectedMenu.isFree && _currentUser!.coinBalance < selectedMenu.requiredCoins) {
-        return {
-          'success': false,
-          'error': 'insufficient_coins',
-          'message': '코인이 부족합니다. 필요한 코인: ${selectedMenu.requiredCoins}, 보유 코인: ${_currentUser!.coinBalance}',
-          'requiredCoins': selectedMenu.requiredCoins,
-          'currentCoins': _currentUser!.coinBalance,
-        };
-      }
+      // V2.1 API는 서버에서 메뉴를 검증합니다
 
       _setLoadingState(LoadingState.loading);
       _clearError();
       
-      final result = await AuthService.executeTarotReading(
-        _currentUser!.id, 
-        menuId, 
-        cardCount
+      print('V2.1 API로 타로 리딩 실행: menuId=$menuId, cardCount=$cardCount');
+      
+      final requestUrl = '${AuthService.baseUrl}/tarot/execute-reading';
+      print('HTTP 요청 URL: $requestUrl');
+      
+      // V2.1 API 호출
+      final response = await http.post(
+        Uri.parse(requestUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': _currentUser!.id,
+          'menuId': menuId,
+          'questionType': 'general',
+          'spreadType': cardCount == 1 ? 'single' : 'three_card',
+        }),
       );
+      
+      print('HTTP 응답 상태: ${response.statusCode}');
+      print('HTTP 응답 내용: ${response.body}');
 
-      if (result['success'] == true) {
-        // 응답 데이터 검증
-        if (result['reading'] == null || result['historyId'] == null) {
-          throw Exception('서버 응답이 불완전합니다');
-        }
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
 
-        // 사용자 코인 잔액 업데이트
-        final newBalance = result['userCoinBalance'];
-        if (newBalance != null && newBalance >= 0) {
-          updateUserCoins(newBalance);
+        if (result['success'] == true) {
+          // V2.1 응답 데이터 처리
+          final data = result['data'];
+          
+          // 사용자 코인 잔액 업데이트
+          final newBalance = data['newBalance'];
+          if (newBalance != null) {
+            updateUserCoins(newBalance);
+          }
+          
+          _setLoadingState(LoadingState.success);
+          print('타로 리딩 성공: ${data['coinsUsed']}코인 사용, 잔액: ${newBalance}코인');
+          
+          return {
+            'success': true,
+            'cards': data['cards'],
+            'interpretation': data['interpretation'],
+            'historyId': data['historyId'],
+            'coinsUsed': data['coinsUsed'] ?? 0,
+          };
+        } else {
+          _setLoadingState(LoadingState.error);
+          _errorMessage = result['message'] ?? '타로 리딩 실패';
+          return {
+            'success': false,
+            'message': result['message'] ?? '타로 리딩 실패',
+          };
         }
-        
-        _setLoadingState(LoadingState.success);
-        print('타로 리딩 성공: ${result['coinsUsed']}코인 사용, 잔액: ${result['userCoinBalance']}코인');
-        
-        return {
-          'success': true,
-          'reading': result['reading'],
-          'historyId': result['historyId'],
-          'coinsUsed': result['coinsUsed'] ?? 0,
-        };
       } else {
         _setLoadingState(LoadingState.error);
-        _errorMessage = result['message'] ?? '타로 리딩 실패';
-        return result; // 코인 부족 등의 오류 정보 포함
+        _errorMessage = '서버 오류: ${response.statusCode}';
+        return {
+          'success': false,
+          'message': '서버 오류가 발생했습니다',
+        };
       }
     } catch (e) {
       _handleError('타로 리딩 실행 실패', e);
